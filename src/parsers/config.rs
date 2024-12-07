@@ -25,15 +25,15 @@ impl<'de> Deserialize<'de> for RuleTypeConfigDetail {
 
         if let Some(values) = map.get("values") {
             if let Some(values) = values.as_sequence() {
-            let values = values
-                .iter()
-                .filter_map(|v| v.as_str().map(|s| s.to_string()))
-                .collect();
-            return Ok(RuleTypeConfigDetail::Values { values });
+                let values = values
+                    .iter()
+                    .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                    .collect();
+                return Ok(RuleTypeConfigDetail::Values { values });
             }
         } else if let Some(threshold) = map.get("threshold") {
             if let Some(threshold) = threshold.as_u64() {
-            return Ok(RuleTypeConfigDetail::Threshold { threshold });
+                return Ok(RuleTypeConfigDetail::Threshold { threshold });
             }
         }
 
