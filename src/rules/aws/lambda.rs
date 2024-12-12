@@ -1,8 +1,8 @@
 use crate::error_reporter::ErrorReporter;
+use crate::parsers::LineMarker;
 use crate::parsers::config::{RuleConfig, RuleType};
 use crate::parsers::iac::AWSResourceType;
 use crate::parsers::iac::InfratructureTemplate;
-use crate::parsers::LineMarker;
 use crate::rules::violations::LambdaViolation;
 
 pub fn check_lambda_missing_tag<'a, L: LineMarker>(

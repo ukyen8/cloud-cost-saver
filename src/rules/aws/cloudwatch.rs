@@ -1,8 +1,8 @@
 use crate::error_reporter::ErrorReporter;
+use crate::parsers::LineMarker;
 use crate::parsers::config::{RuleConfig, RuleType};
 use crate::parsers::iac::AWSResourceType;
 use crate::parsers::iac::InfratructureTemplate;
-use crate::parsers::LineMarker;
 use crate::rules::violations::CloudWatchViolation;
 
 pub fn check_cloudwatch_log_group_retention<'a, L: LineMarker>(
