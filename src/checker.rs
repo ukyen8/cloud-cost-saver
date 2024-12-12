@@ -1,7 +1,7 @@
 use crate::error_reporter::ErrorReporter;
-use crate::parsers::LineMarker;
 use crate::parsers::config::{Config, RuleType};
 use crate::parsers::iac::InfratructureTemplate;
+use crate::parsers::LineMarker;
 use crate::rules::aws;
 
 pub(crate) struct Checker<'a, L: LineMarker + 'a> {
@@ -115,11 +115,11 @@ mod tests_cfn {
         use super::{ExpectedViolation, ExpectedViolations};
         use crate::checker::Checker;
         use crate::error_reporter::ErrorReporter;
-        use crate::parsers::YamlLineMarker;
-        use crate::parsers::cfn::{CloudFormation, parse_cloudformation};
+        use crate::parsers::cfn::{parse_cloudformation, CloudFormation};
         use crate::parsers::config::{Config, RuleConfig, RuleType, RuleTypeConfigDetail};
         use crate::parsers::get_yaml_line_marker;
         use crate::parsers::iac::InfratructureTemplate;
+        use crate::parsers::YamlLineMarker;
         use crate::rules::violations::{CloudWatchViolation, LambdaViolation};
         use rstest::*;
 
@@ -237,8 +237,8 @@ mod tests_cfn {
             checker.run_checks();
 
             let expected = ExpectedViolations::new(vec![
-                ExpectedViolation::new(&violation, "MyLambdaFunction"),
                 ExpectedViolation::new(&violation, "MyLambdaFunction2"),
+                ExpectedViolation::new(&violation, "MyLambdaFunction"),
             ]);
             expected.assert_all_match(&context.error_reporter.render_errors());
         }
@@ -250,7 +250,7 @@ mod tests_cfn {
             Some(RuleTypeConfigDetail::Threshold { threshold: (14) }),
             CloudWatchViolation::LogRetentionTooLong,
         )]
-        fn test_cloudwatch_log_group_retention(
+        fn test_cw_001(
             #[case] template_name: &str,
             #[case] rule_type: RuleType,
             #[case] config_detail: Option<RuleTypeConfigDetail>,

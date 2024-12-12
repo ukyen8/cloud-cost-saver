@@ -1,7 +1,7 @@
 pub(crate) mod cfn;
 pub(crate) mod config;
 pub(crate) mod iac;
-use marked_yaml::{Node, Span, parse_yaml};
+use marked_yaml::{parse_yaml, Node, Span};
 use std::fs;
 
 pub trait LineMarker {

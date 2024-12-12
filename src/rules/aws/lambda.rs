@@ -1,8 +1,8 @@
 use crate::error_reporter::ErrorReporter;
-use crate::parsers::LineMarker;
 use crate::parsers::config::{RuleConfig, RuleType};
 use crate::parsers::iac::AWSResourceType;
 use crate::parsers::iac::InfratructureTemplate;
+use crate::parsers::LineMarker;
 use crate::rules::violations::LambdaViolation;
 
 pub fn check_lambda_missing_tag<'a, L: LineMarker>(
@@ -24,8 +24,14 @@ pub fn check_lambda_missing_tag<'a, L: LineMarker>(
                                     if let Some(target_tags) = rule_type.config_detail.get_values()
                                     {
                                         // Check if at least one tag is defined in the resource
-                                        let tag_exists = target_tags.iter().any(|tag| {
-                                            tags.as_mapping().map_or(false, |m| m.contains_key(tag))
+                                        let tag_exists = target_tags.iter().any(|target_tag| {
+                                            tags.as_sequence().map_or(false, |seq| {
+                                                seq.iter().any(|tag_mapping| {
+                                                    tag_mapping.as_mapping().map_or(false, |m| {
+                                                        m.contains_key(target_tag)
+                                                    })
+                                                })
+                                            })
                                         });
 
                                         if !tag_exists {

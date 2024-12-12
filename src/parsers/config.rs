@@ -86,26 +86,41 @@ impl Default for RuleConfig {
         let mut rules = HashMap::new();
 
         // Default configurations for each rule
-        rules.insert(RuleType::LambdaMissingTag, RuleTypeConfig {
-            enabled: true,
-            config_detail: RuleTypeConfigDetail::Values { values: vec![] },
-        });
-        rules.insert(RuleType::LambdaArchitectureARM, RuleTypeConfig {
-            enabled: true,
-            config_detail: RuleTypeConfigDetail::Simple,
-        });
-        rules.insert(RuleType::LambdaMissingLogGroup, RuleTypeConfig {
-            enabled: true,
-            config_detail: RuleTypeConfigDetail::Simple,
-        });
-        rules.insert(RuleType::CWLogRetentionPolicy, RuleTypeConfig {
-            enabled: true,
-            config_detail: RuleTypeConfigDetail::Threshold { threshold: 30 },
-        });
-        rules.insert(RuleType::CWInfrequentAccessLogGroupClass, RuleTypeConfig {
-            enabled: false,
-            config_detail: RuleTypeConfigDetail::Simple,
-        });
+        rules.insert(
+            RuleType::LambdaMissingTag,
+            RuleTypeConfig {
+                enabled: true,
+                config_detail: RuleTypeConfigDetail::Values { values: vec![] },
+            },
+        );
+        rules.insert(
+            RuleType::LambdaArchitectureARM,
+            RuleTypeConfig {
+                enabled: true,
+                config_detail: RuleTypeConfigDetail::Simple,
+            },
+        );
+        rules.insert(
+            RuleType::LambdaMissingLogGroup,
+            RuleTypeConfig {
+                enabled: true,
+                config_detail: RuleTypeConfigDetail::Simple,
+            },
+        );
+        rules.insert(
+            RuleType::CWLogRetentionPolicy,
+            RuleTypeConfig {
+                enabled: true,
+                config_detail: RuleTypeConfigDetail::Threshold { threshold: 30 },
+            },
+        );
+        rules.insert(
+            RuleType::CWInfrequentAccessLogGroupClass,
+            RuleTypeConfig {
+                enabled: false,
+                config_detail: RuleTypeConfigDetail::Simple,
+            },
+        );
 
         RuleConfig { rules }
     }
