@@ -1,6 +1,5 @@
 use crate::parsers::cfn::CloudFormation;
 use serde::{Deserialize, Serialize};
-use serde_yaml;
 use std::collections::HashMap;
 
 pub struct InfratructureTemplate {

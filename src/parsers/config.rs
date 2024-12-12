@@ -163,6 +163,7 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_yaml::from_str;
 
     #[test]
     fn test_default_config() {
@@ -222,5 +223,18 @@ mod tests {
                 .unwrap(),
             14
         );
+    }
+
+    #[test]
+    #[should_panic(expected = "missing field `enabled`")]
+    fn test_invalid_config_missing_enabled() {
+        let yaml = r#"
+        cloudformation:
+          rules:
+            LambdaMissingLogGroup:
+              threshold: 14
+        "#;
+
+        let _: Config = from_str(yaml).unwrap();
     }
 }

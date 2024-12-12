@@ -35,6 +35,16 @@ impl LineMarker for YamlLineMarker {
 
 pub(crate) fn get_yaml_line_marker(template: &str) -> Result<YamlLineMarker, std::io::Error> {
     let doc = fs::read_to_string(template)?;
-    let node = parse_yaml(0, &doc).expect("Failed to parse YAML");
+    let preprocessed_doc = preprocess_yaml(&doc);
+    let node = parse_yaml(0, &preprocessed_doc).expect("Failed to parse YAML");
     Ok(YamlLineMarker::new(node))
+}
+fn preprocess_yaml(doc: &str) -> String {
+    let mut lines: Vec<String> = Vec::new();
+    for line in doc.lines() {
+        // Replace `!` with `###` to avoid parsing issues with `!` in the YAML
+        let cleaned_line = line.replace("!", "###");
+        lines.push(cleaned_line);
+    }
+    lines.join("\n")
 }

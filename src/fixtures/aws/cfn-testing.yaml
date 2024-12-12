@@ -10,7 +10,7 @@ Resources:
   MyLambdaFunction:
     Type: "AWS::Lambda::Function"
     Properties:
-      FunctionName: "MyLambda"
+      FunctionName: "MyLambda1"
       Handler: "index.handler"
       Code:
         S3Bucket: "lambda-functions"
@@ -20,7 +20,7 @@ Resources:
   MyLambdaFunction2:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: "MyLambda"
+      FunctionName: "MyLambda2"
       Handler: "index.handler"
       Code:
         S3Bucket: "lambda-functions"
@@ -30,8 +30,10 @@ Resources:
   MyLambdaFunction3:
       Type: AWS::Serverless::Function
       Properties:
-        FunctionName: "MyLambda"
+        FunctionName: "MyLambda3"
         Handler: "index.handler"
+        LoggingConfig:
+          LogGroup: !Ref MyLogGroup
         Architectures:
           - arm64
         Tags:
@@ -40,3 +42,4 @@ Resources:
           S3Bucket: "lambda-functions"
           S3Key: "function.zip"
         Role: "arn:aws:iam::123456789012:role/execution_role"
+        

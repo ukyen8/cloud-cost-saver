@@ -219,7 +219,13 @@ mod tests_cfn {
             None,
             LambdaViolation::ARMArchitecture
         )]
-        fn test_lambda_missing_tag_or_no_arm_architecture(
+        #[case(
+            "cfn-testing.yaml",
+            RuleType::LambdaMissingLogGroup,
+            None,
+            LambdaViolation::MissingLogGroup
+        )]
+        fn test_lambda_001_002_003(
             #[case] template_name: &str,
             #[case] rule_type: RuleType,
             #[case] config_detail: Option<RuleTypeConfigDetail>,
@@ -231,8 +237,8 @@ mod tests_cfn {
             checker.run_checks();
 
             let expected = ExpectedViolations::new(vec![
-                ExpectedViolation::new(&violation, "MyLambdaFunction"),
                 ExpectedViolation::new(&violation, "MyLambdaFunction2"),
+                ExpectedViolation::new(&violation, "MyLambdaFunction"),
             ]);
             expected.assert_all_match(&context.error_reporter.render_errors());
         }
@@ -244,7 +250,7 @@ mod tests_cfn {
             Some(RuleTypeConfigDetail::Threshold { threshold: (14) }),
             CloudWatchViolation::LogRetentionTooLong,
         )]
-        fn test_cloudwatch_log_group_retention(
+        fn test_cw_001(
             #[case] template_name: &str,
             #[case] rule_type: RuleType,
             #[case] config_detail: Option<RuleTypeConfigDetail>,

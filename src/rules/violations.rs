@@ -23,8 +23,10 @@ impl Violation for LambdaViolation {
                 )
             }
             LambdaViolation::MissingLogGroup => {
-                format!("Lambda function creates a log group automatically when invoked for the first time with no expiry. \
-                Please explicitly create a log group with a retention policy.")
+                format!(
+                    "Lambda function creates a log group automatically when invoked for the first time with no expiry. \
+                Please explicitly create a log group with a retention policy."
+                )
             }
             LambdaViolation::MissingTag => {
                 format!(
@@ -55,13 +57,19 @@ impl Violation for CloudWatchViolation {
     fn message(&self) -> String {
         match self {
             CloudWatchViolation::LogRetentionTooLong => {
-                format!("The log group retention period is too long. Consider reducing it to save costs and improve log management efficiency.")
+                format!(
+                    "The log group retention period is too long. Consider reducing it to save costs and improve log management efficiency."
+                )
             }
             CloudWatchViolation::NoLogRetention => {
-                format!("The log group has no retention policy. Consider setting a retention policy to save costs and improve log management efficiency.")
+                format!(
+                    "The log group has no retention policy. Consider setting a retention policy to save costs and improve log management efficiency."
+                )
             }
             CloudWatchViolation::InfrequentAccessLogGroupClass => {
-                format!("The log group is using STANDARD class. Consider using INFREQUENT_ACCESS to save costs.")
+                format!(
+                    "The log group is using STANDARD class. Consider using INFREQUENT_ACCESS to save costs."
+                )
             }
         }
     }

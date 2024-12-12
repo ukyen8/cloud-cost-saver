@@ -1,5 +1,7 @@
 mod checker;
 
+use std::process::ExitCode;
+
 use crate::checker::Checker;
 use crate::parsers::config::Config;
 mod error_reporter;
@@ -21,7 +23,7 @@ struct Args {
     config: String,
 }
 
-fn main() {
+fn main() -> ExitCode {
     let args = Args::parse();
 
     let cloud_provider = args.cloud_provider;
@@ -44,8 +46,10 @@ fn main() {
             checker.run_checks();
             if error_reporter.has_errors() {
                 eprintln!("{}", error_reporter.render_errors());
+                return ExitCode::FAILURE;
             }
         }
         _ => (),
     };
+    ExitCode::SUCCESS
 }
