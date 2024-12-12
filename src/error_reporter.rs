@@ -47,23 +47,24 @@ impl ErrorReporter {
     pub fn render_errors(&self) -> String {
         self.errors
             .iter()
+            .rev()
             .map(|e| {
-                let span_info = if let Some(span) = &e.span {
-                    if let Some(start) = span.start() {
-                        format!("{}:{}", self.file_path, start.line() - 1)
-                    } else {
-                        self.file_path.clone()
-                    }
+            let span_info = if let Some(span) = &e.span {
+                if let Some(start) = span.start() {
+                format!("{}:{}", self.file_path, start.line() - 1)
                 } else {
-                    self.file_path.clone()
-                };
-                format!(
-                    "{}: {}: {}\n{}\n",
-                    e.violation.code(),
-                    e.resource_name,
-                    e.violation.message(),
-                    span_info,
-                )
+                self.file_path.clone()
+                }
+            } else {
+                self.file_path.clone()
+            };
+            format!(
+                "{}: {}: {}\n{}\n",
+                e.violation.code(),
+                e.resource_name,
+                e.violation.message(),
+                span_info,
+            )
             })
             .collect::<Vec<String>>()
             .join("\n")

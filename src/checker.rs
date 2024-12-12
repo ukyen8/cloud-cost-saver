@@ -1,7 +1,7 @@
 use crate::error_reporter::ErrorReporter;
+use crate::parsers::LineMarker;
 use crate::parsers::config::{Config, RuleType};
 use crate::parsers::iac::InfratructureTemplate;
-use crate::parsers::LineMarker;
 use crate::rules::aws;
 
 pub(crate) struct Checker<'a, L: LineMarker + 'a> {
@@ -115,11 +115,11 @@ mod tests_cfn {
         use super::{ExpectedViolation, ExpectedViolations};
         use crate::checker::Checker;
         use crate::error_reporter::ErrorReporter;
-        use crate::parsers::cfn::{parse_cloudformation, CloudFormation};
+        use crate::parsers::YamlLineMarker;
+        use crate::parsers::cfn::{CloudFormation, parse_cloudformation};
         use crate::parsers::config::{Config, RuleConfig, RuleType, RuleTypeConfigDetail};
         use crate::parsers::get_yaml_line_marker;
         use crate::parsers::iac::InfratructureTemplate;
-        use crate::parsers::YamlLineMarker;
         use crate::rules::violations::{CloudWatchViolation, LambdaViolation};
         use rstest::*;
 
@@ -219,7 +219,13 @@ mod tests_cfn {
             None,
             LambdaViolation::ARMArchitecture
         )]
-        fn test_lambda_missing_tag_or_no_arm_architecture(
+        #[case(
+            "cfn-testing.yaml",
+            RuleType::LambdaMissingLogGroup,
+            None,
+            LambdaViolation::MissingLogGroup
+        )]
+        fn test_lambda_001_002_003(
             #[case] template_name: &str,
             #[case] rule_type: RuleType,
             #[case] config_detail: Option<RuleTypeConfigDetail>,
