@@ -11,6 +11,7 @@ serde_yaml = "0.9.34"
 strum = { version = "0.26.3", features = ["derive"] }
 strum_macros = "0.26.4"
 indexmap = { version = "2.7.0", features = ["serde"] }
+toml = "0.8.19"
 
 [dev-dependencies]
 rstest = "0.23.0"

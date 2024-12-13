@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Example CloudFormation Template"
+
+Parameters:
+  ExampleParameter:
+    Type: String
+
+Mappings:
+  ExampleMapping:
+    Key:
+      Name: "Value"
+
+Globals:
+  Function:
+    ExampleFunction:
+      Timeout: 30
+
+Resources:
+  ExampleResource:
+    Type: "AWS::S3::Bucket"
+
+Outputs:
+  ExampleOutput:
+    Description: "Example output"
+    Value: "ExampleValue"

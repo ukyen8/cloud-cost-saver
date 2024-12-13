@@ -65,7 +65,7 @@ impl IaCMapping for Mapping {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Output {
-    #[serde(rename = "description")]
+    #[serde(rename = "Description")]
     description: String,
     #[serde(rename = "Value")]
     value: String,
@@ -165,4 +165,145 @@ pub(crate) fn parse_cloudformation(
     let data = fs::read_to_string(file_path)?;
     let cloudformation: CloudFormation = serde_yaml::from_str(&data)?;
     Ok(cloudformation)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SamConfig {
+    #[serde(deserialize_with = "deserialize_version")]
+    pub version: Option<String>,
+    #[serde(flatten)]
+    pub environments: HashMap<String, SamConfigSection>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SamConfigSection {
+    pub deploy: Option<DeployParameters>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DeployParameters {
+    pub parameters: Option<DeployParameterValues>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DeployParameterValues {
+    pub stack_name: Option<String>,
+    pub s3_bucket: Option<String>,
+    pub s3_prefix: Option<String>,
+    pub region: Option<String>,
+    pub confirm_changeset: Option<bool>,
+    pub capabilities: Option<String>,
+    #[serde(deserialize_with = "deserialize_parameter_overrides")]
+    pub parameter_overrides: Option<HashMap<String, String>>,
+    pub image_repositories: Option<Vec<String>>,
+}
+
+fn deserialize_parameter_overrides<'de, D>(
+    deserializer: D,
+) -> Result<Option<HashMap<String, String>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value: serde_yaml::Value = serde::Deserialize::deserialize(deserializer)?;
+    if let serde_yaml::Value::String(s) = value {
+        let map = s
+            .split_whitespace()
+            .filter_map(|pair| {
+                let mut split = pair.splitn(2, '=');
+                if let (Some(key), Some(value)) = (split.next(), split.next()) {
+                    Some((key.to_string(), value.to_string()))
+                } else {
+                    None
+                }
+            })
+            .collect::<HashMap<String, String>>();
+        Ok(Some(map))
+    } else {
+        Err(serde::de::Error::custom(
+            "invalid type for parameter_overrides",
+        ))
+    }
+}
+
+fn deserialize_version<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value: serde_yaml::Value = serde::Deserialize::deserialize(deserializer)?;
+    match value {
+        serde_yaml::Value::String(s) => Ok(Some(s)),
+        serde_yaml::Value::Number(n) => Ok(Some(n.to_string())),
+        _ => Err(serde::de::Error::custom("invalid type for version")),
+    }
+}
+
+pub(crate) fn parse_samconfig(file_path: &str) -> Result<SamConfig, Box<dyn std::error::Error>> {
+    let data = fs::read_to_string(file_path)?;
+    let samconfig: SamConfig = toml::from_str(&data)?;
+    Ok(samconfig)
+}
+
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_parse_cloudformation() {
+        let cloudformation =
+            parse_cloudformation("src/fixtures/aws/cfn-parsing-test.yaml").unwrap();
+        assert_eq!(
+            cloudformation.awstemplate_format_version,
+            Some("2010-09-09".to_string())
+        );
+        assert_eq!(
+            cloudformation.description,
+            Some("Example CloudFormation Template".to_string())
+        );
+        assert_eq!(cloudformation.parameters.unwrap().len(), 1);
+        assert_eq!(cloudformation.mappings.unwrap().len(), 1);
+        assert_eq!(cloudformation.globals.unwrap().function.unwrap().len(), 1);
+        assert_eq!(cloudformation.resources.unwrap().len(), 1);
+        assert_eq!(cloudformation.outputs.unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_parse_samconfig() {
+        let samconfig = parse_samconfig("src/fixtures/aws/samconfig.toml").unwrap();
+        assert_eq!(samconfig.version, Some("0.1".to_string()));
+        assert_eq!(samconfig.environments.len(), 2);
+        let default_env = samconfig.environments.get("default").unwrap();
+        assert_eq!(
+            default_env.deploy.as_ref().unwrap().parameters.is_some(),
+            true
+        );
+        let deploy_params = default_env
+            .deploy
+            .as_ref()
+            .unwrap()
+            .parameters
+            .as_ref()
+            .unwrap();
+        assert_eq!(
+            deploy_params.stack_name,
+            Some("my-sam-application".to_string())
+        );
+        assert_eq!(
+            deploy_params.s3_bucket,
+            Some("my-sam-deployments-bucket".to_string())
+        );
+        assert_eq!(deploy_params.s3_prefix, Some("my-sam-app".to_string()));
+        assert_eq!(deploy_params.region, Some("us-east-1".to_string()));
+        assert_eq!(deploy_params.confirm_changeset, Some(true));
+        assert_eq!(
+            deploy_params.capabilities,
+            Some("CAPABILITY_IAM".to_string())
+        );
+        assert_eq!(
+            deploy_params.parameter_overrides,
+            Some(HashMap::from_iter(vec![
+                ("DatabaseName".to_string(), "my-database".to_string()),
+                ("ApiKey".to_string(), "my-api-key".to_string()),
+                ("Environment".to_string(), "default".to_string())
+            ]))
+        );
+    }
 }

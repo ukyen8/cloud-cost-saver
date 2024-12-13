@@ -1,0 +1,25 @@
+version = 0.1
+
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "my-sam-application"
+s3_bucket = "my-sam-deployments-bucket"
+s3_prefix = "my-sam-app"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "Environment=default DatabaseName=my-database ApiKey=my-api-key"
+image_repositories = []
+
+[prod]
+[prod.deploy]
+[prod.deploy.parameters]
+stack_name = "my-sam-application-prod"
+s3_bucket = "my-sam-deployments-bucket-prod"
+s3_prefix = "my-sam-app-prod"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "EnvironmentName=\"prod\" DatabaseName=\"prod-database\" ApiKey=\"my-api-key\""
+image_repositories = []
