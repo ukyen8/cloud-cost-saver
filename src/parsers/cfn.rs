@@ -23,6 +23,75 @@ pub(crate) struct CloudFormation {
     pub outputs: Option<HashMap<String, Output>>,
 }
 
+impl CloudFormation {
+    pub fn resolve_parameters(&mut self, samconfig: &SamConfig, environment: &str) {
+        let samconfig_section = samconfig
+            .environments
+            .get(environment)
+            .expect("Environment not found in samconfig");
+
+        // Check if the parameter is overridden in the samconfig
+        if let Some(sam_deploy_parameters) = samconfig_section.deploy.as_ref() {
+            if let Some(parameters) = self.parameters.as_mut() {
+                for (k, v) in parameters.iter_mut() {
+                    if let Some(deploy_params) = sam_deploy_parameters.parameters.as_ref() {
+                        if deploy_params
+                            .parameter_overrides
+                            .as_ref()
+                            .map_or(false, |s| s.get(k).is_some())
+                        {
+                            v.default = deploy_params
+                                .parameter_overrides
+                                .as_ref()
+                                .and_then(|s| s.get(k))
+                                .map(|s| serde_yaml::Value::String(s.clone()));
+                        }
+                    }
+                }
+            }
+        }
+
+        // Replace Global section
+        if let Some(globals) = self.globals.as_mut() {
+            if let Some(function) = globals.function.as_mut() {
+                // Replace function environment variables
+                if let Some(function_environment) = function.get_mut("Environment") {
+                    if let Some(function_environment_variables) =
+                        function_environment.get_mut("Variables")
+                    {
+                        if let Some(function_environment_variables_map) =
+                            function_environment_variables.as_mapping_mut()
+                        {
+                            for (_, v) in function_environment_variables_map.iter_mut() {
+                                if let serde_yaml::Value::Tagged(tagged_value) = v {
+                                    match tagged_value.tag.to_string().as_str() {
+                                        "!Ref" => {
+                                            if let Some(ref_value) = tagged_value.value.as_str() {
+                                                if let Some(parameter) = self
+                                                    .parameters
+                                                    .as_ref()
+                                                    .and_then(|p| p.get(ref_value))
+                                                {
+                                                    if let Some(default) =
+                                                        parameter.default.as_ref()
+                                                    {
+                                                        *v = default.clone();
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Parameter {
     #[serde(rename = "Type")]
@@ -263,6 +332,37 @@ mod test {
         assert_eq!(cloudformation.globals.unwrap().function.unwrap().len(), 1);
         assert_eq!(cloudformation.resources.unwrap().len(), 1);
         assert_eq!(cloudformation.outputs.unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_resolve_parameters() {
+        let mut cloudformation =
+            parse_cloudformation("src/fixtures/aws/cfn-parsing-test.yaml").unwrap();
+        let samconfig = parse_samconfig("src/fixtures/aws/samconfig.toml").unwrap();
+        cloudformation.resolve_parameters(&samconfig, "default");
+        let parameters = cloudformation.parameters.unwrap();
+        let database_name = parameters.get("DatabaseName").unwrap();
+        assert_eq!(
+            database_name.default,
+            Some(serde_yaml::Value::String("my-database".to_string()))
+        );
+        let api_key = parameters.get("ApiKey").unwrap();
+        assert_eq!(
+            api_key.default,
+            Some(serde_yaml::Value::String("my-api-key".to_string()))
+        );
+
+        let globals = cloudformation.globals.as_ref().unwrap();
+        let function = globals.function.as_ref().unwrap();
+        let environment = function.get("Environment").unwrap();
+        let function_environment_variables = environment.get("Variables").unwrap();
+        let log_level = function_environment_variables.get("LOG_LEVEL").unwrap();
+        assert_eq!(log_level, &serde_yaml::Value::String("INFO".to_string()));
+        let environment = function_environment_variables.get("ENVIRONMENT").unwrap();
+        assert_eq!(
+            environment,
+            &serde_yaml::Value::String("default".to_string())
+        );
     }
 
     #[test]

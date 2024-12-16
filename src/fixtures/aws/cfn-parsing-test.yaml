@@ -2,22 +2,45 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: "Example CloudFormation Template"
 
 Parameters:
-  ExampleParameter:
+  Environment:
     Type: String
+    Default: "default"
+  DatabaseName:
+    Type: String
+    Default: "example-database"
+  ApiKey:
+    Type: String
+    Default: "example-api-key"
+  LogLevel:
+    Type: String
+    Default: "INFO"
 
 Mappings:
-  ExampleMapping:
-    Key:
+  Environments:
+    default:
       Name: "Value"
+    prod:
+      Name: "Value"
+
 
 Globals:
   Function:
-    ExampleFunction:
-      Timeout: 30
+    Timeout: 60
+    Environment:
+      Variables:
+        LOG_LEVEL: !Ref LogLevel
+        POWERTOOLS_SERVICE_NAME: !Join [ '-', [ !Ref AWS::StackName, 'xray' ] ]
+        REGION_NAME: !Ref AWS::Region
+        ENVIRONMENT: !Ref Environment
 
 Resources:
   ExampleResource:
-    Type: "AWS::S3::Bucket"
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "MyLambda"
+      Handler: "index.handler"
+      CodeUri: .
+      Role: "arn:aws:iam::123456789012:role/execution_role"
 
 Outputs:
   ExampleOutput:
