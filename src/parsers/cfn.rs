@@ -1,7 +1,6 @@
 use crate::parsers::iac::{AWSResourceType, IaCMapping, IaCOutput, IaCParameter, IaCResource};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
-use serde_yaml;
 use std::collections::HashMap;
 use std::fs;
 
@@ -37,8 +36,7 @@ impl CloudFormation {
                     if let Some(deploy_params) = sam_deploy_parameters.parameters.as_ref() {
                         if deploy_params
                             .parameter_overrides
-                            .as_ref()
-                            .map_or(false, |s| s.get(k).is_some())
+                            .as_ref().is_some_and(|s| s.get(k).is_some())
                         {
                             v.default = deploy_params
                                 .parameter_overrides
@@ -64,23 +62,20 @@ impl CloudFormation {
                         {
                             for (_, v) in function_environment_variables_map.iter_mut() {
                                 if let serde_yaml::Value::Tagged(tagged_value) = v {
-                                    match tagged_value.tag.to_string().as_str() {
-                                        "!Ref" => {
-                                            if let Some(ref_value) = tagged_value.value.as_str() {
-                                                if let Some(parameter) = self
-                                                    .parameters
-                                                    .as_ref()
-                                                    .and_then(|p| p.get(ref_value))
+                                    if tagged_value.tag.to_string().as_str() == "!Ref" {
+                                        if let Some(ref_value) = tagged_value.value.as_str() {
+                                            if let Some(parameter) = self
+                                                .parameters
+                                                .as_ref()
+                                                .and_then(|p| p.get(ref_value))
+                                            {
+                                                if let Some(default) =
+                                                    parameter.default.as_ref()
                                                 {
-                                                    if let Some(default) =
-                                                        parameter.default.as_ref()
-                                                    {
-                                                        *v = default.clone();
-                                                    }
+                                                    *v = default.clone();
                                                 }
                                             }
                                         }
-                                        _ => {}
                                     }
                                 }
                             }
@@ -223,7 +218,7 @@ impl<'de> Deserialize<'de> for Resource {
         // Construct the Resource with the remaining fields in `other`
         Ok(Resource {
             type_: resource_type,
-            properties: properties,
+            properties,
             other: map.into_iter().collect(),
         })
     }
@@ -313,7 +308,7 @@ pub(crate) fn parse_samconfig(file_path: &str) -> Result<SamConfig, Box<dyn std:
 }
 
 mod test {
-    use super::*;
+    
 
     #[test]
     fn test_parse_cloudformation() {

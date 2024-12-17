@@ -76,8 +76,7 @@ pub struct RuleConfig {
 impl RuleConfig {
     pub fn enabled(&self, violation: RuleType) -> bool {
         self.rules
-            .get(&violation)
-            .map_or(false, |rule| rule.enabled)
+            .get(&violation).is_some_and(|rule| rule.enabled)
     }
 }
 

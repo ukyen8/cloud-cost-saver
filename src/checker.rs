@@ -30,33 +30,33 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
         if let Some(rule_config) = &self.config.cloudformation {
             if rule_config.enabled(RuleType::LambdaMissingTag) {
                 aws::lambda::check_lambda_missing_tag(
-                    &self.infra_template,
-                    &rule_config,
-                    &mut self.error_reporter,
+                    self.infra_template,
+                    rule_config,
+                    self.error_reporter,
                     self.line_marker,
                 );
             }
             if rule_config.enabled(RuleType::LambdaArchitectureARM) {
                 aws::lambda::check_lambda_architecture_arm(
-                    &self.infra_template,
-                    &mut self.error_reporter,
+                    self.infra_template,
+                    self.error_reporter,
                     self.line_marker,
                 );
             }
 
             if rule_config.enabled(RuleType::LambdaMissingLogGroup) {
                 aws::lambda::check_lambda_missing_log_group(
-                    &self.infra_template,
-                    &mut self.error_reporter,
+                    self.infra_template,
+                    self.error_reporter,
                     self.line_marker,
                 );
             }
 
             if rule_config.enabled(RuleType::CWLogRetentionPolicy) {
                 aws::cloudwatch::check_cloudwatch_log_group_retention(
-                    &self.infra_template,
-                    &rule_config,
-                    &mut self.error_reporter,
+                    self.infra_template,
+                    rule_config,
+                    self.error_reporter,
                     self.line_marker,
                 );
             }
