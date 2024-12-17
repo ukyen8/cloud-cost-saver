@@ -7,7 +7,7 @@ use crate::parsers::config::Config;
 mod error_reporter;
 mod parsers;
 mod rules;
-use crate::parsers::cfn::parse_cloudformation;
+use crate::parsers::cfn::{parse_cloudformation, parse_samconfig};
 use crate::parsers::iac::InfratructureTemplate;
 use clap::Parser;
 
@@ -18,6 +18,12 @@ struct Args {
 
     #[arg(short, long)]
     template: String,
+
+    #[arg(short, long)]
+    environment: String,
+
+    #[arg(short, long)]
+    samconfig: Option<String>,
 
     #[arg(short, long, default_value_t = String::from("./.cloudsaving.yaml"))]
     config: String,
@@ -30,14 +36,19 @@ fn main() -> ExitCode {
     let template_file = args.template;
     let config_file = args.config;
     let config = Config::load(&config_file).expect("Failed to load config");
+    let environment = args.environment;
     let mut error_reporter = error_reporter::ErrorReporter::new(&template_file);
 
     if cloud_provider.as_str() == "aws" {
-        let parsed_cfn =
+        let mut parsed_cfn =
             parse_cloudformation(&template_file).expect("Failed to parse CloudFormation template");
+        let samconfig = parse_samconfig(args.samconfig.as_deref().expect("samconfig is required"))
+            .expect("Failed to parse samconfig");
+        parsed_cfn.resolve_parameters(&samconfig, &environment);
         let infra_template = InfratructureTemplate {
             cloudformation: Some(parsed_cfn),
         };
+
         let line_marker =
             parsers::get_yaml_line_marker(&template_file).expect("Failed to get YAML line marker");
         let mut checker = Checker::new(&config, &mut error_reporter, &infra_template, &line_marker);
