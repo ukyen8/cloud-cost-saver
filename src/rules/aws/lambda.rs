@@ -20,15 +20,14 @@ pub fn check_lambda_missing_tag<L: LineMarker>(
                             if let Some(rule_type) =
                                 rule_config.rules.get(&RuleType::LambdaMissingTag)
                             {
-                                if let Some(target_tags) = rule_type.config_detail.get_values()
-                                {
+                                if let Some(target_tags) = rule_type.config_detail.get_values() {
                                     // Check if at least one tag is defined in the resource
                                     let tag_exists = target_tags.iter().any(|target_tag| {
                                         tags.as_sequence().is_some_and(|seq| {
                                             seq.iter().any(|tag_mapping| {
-                                                tag_mapping.as_mapping().is_some_and(|m| {
-                                                    m.contains_key(target_tag)
-                                                })
+                                                tag_mapping
+                                                    .as_mapping()
+                                                    .is_some_and(|m| m.contains_key(target_tag))
                                             })
                                         })
                                     });
@@ -38,11 +37,7 @@ pub fn check_lambda_missing_tag<L: LineMarker>(
                                             Box::new(LambdaViolation::MissingTag),
                                             key,
                                             line_marker
-                                                .get_resource_span(vec![
-                                                    key,
-                                                    "Properties",
-                                                    "Tags",
-                                                ])
+                                                .get_resource_span(vec![key, "Properties", "Tags"])
                                                 .copied(),
                                         );
                                     }
@@ -82,17 +77,14 @@ pub fn check_lambda_architecture_arm<L: LineMarker>(
                     if let Some(properties) = &resource.properties {
                         if let Some(architectures) = properties.get("Architectures") {
                             if architectures
-                                .as_sequence().is_none_or(|v| !v.iter().any(|arch| arch == "arm64"))
+                                .as_sequence()
+                                .is_none_or(|v| !v.iter().any(|arch| arch == "arm64"))
                             {
                                 error_reporter.add_error(
                                     Box::new(LambdaViolation::ARMArchitecture),
                                     key,
                                     line_marker
-                                        .get_resource_span(vec![
-                                            key,
-                                            "Properties",
-                                            "Architectures",
-                                        ])
+                                        .get_resource_span(vec![key, "Properties", "Architectures"])
                                         .copied(),
                                 );
                             }
@@ -122,17 +114,14 @@ pub fn check_lambda_missing_log_group<L: LineMarker>(
                     if let Some(properties) = &resource.properties {
                         if let Some(logging_config) = properties.get("LoggingConfig") {
                             if !logging_config
-                                .as_mapping().is_some_and(|m| m.contains_key("LogGroup"))
+                                .as_mapping()
+                                .is_some_and(|m| m.contains_key("LogGroup"))
                             {
                                 error_reporter.add_error(
                                     Box::new(LambdaViolation::MissingLogGroup),
                                     key,
                                     line_marker
-                                        .get_resource_span(vec![
-                                            key,
-                                            "Properties",
-                                            "LoggingConfig",
-                                        ])
+                                        .get_resource_span(vec![key, "Properties", "LoggingConfig"])
                                         .copied(),
                                 );
                             }

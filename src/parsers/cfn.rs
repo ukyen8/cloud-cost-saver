@@ -36,7 +36,8 @@ impl CloudFormation {
                     if let Some(deploy_params) = sam_deploy_parameters.parameters.as_ref() {
                         if deploy_params
                             .parameter_overrides
-                            .as_ref().is_some_and(|s| s.get(k).is_some())
+                            .as_ref()
+                            .is_some_and(|s| s.get(k).is_some())
                         {
                             v.default = deploy_params
                                 .parameter_overrides
@@ -69,9 +70,7 @@ impl CloudFormation {
                                                 .as_ref()
                                                 .and_then(|p| p.get(ref_value))
                                             {
-                                                if let Some(default) =
-                                                    parameter.default.as_ref()
-                                                {
+                                                if let Some(default) = parameter.default.as_ref() {
                                                     *v = default.clone();
                                                 }
                                             }
@@ -308,7 +307,6 @@ pub(crate) fn parse_samconfig(file_path: &str) -> Result<SamConfig, Box<dyn std:
 }
 
 mod test {
-    
 
     #[test]
     fn test_parse_cloudformation() {
