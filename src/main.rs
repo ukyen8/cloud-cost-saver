@@ -32,24 +32,20 @@ fn main() -> ExitCode {
     let config = Config::load(&config_file).expect("Failed to load config");
     let mut error_reporter = error_reporter::ErrorReporter::new(&template_file);
 
-    match cloud_provider.as_str() {
-        "aws" => {
-            let parsed_cfn = parse_cloudformation(&template_file)
-                .expect("Failed to parse CloudFormation template");
-            let infra_template = InfratructureTemplate {
-                cloudformation: Some(parsed_cfn),
-            };
-            let line_marker = parsers::get_yaml_line_marker(&template_file)
-                .expect("Failed to get YAML line marker");
-            let mut checker =
-                Checker::new(&config, &mut error_reporter, &infra_template, &line_marker);
-            checker.run_checks();
-            if error_reporter.has_errors() {
-                eprintln!("{}", error_reporter.render_errors());
-                return ExitCode::FAILURE;
-            }
+    if cloud_provider.as_str() == "aws" {
+        let parsed_cfn =
+            parse_cloudformation(&template_file).expect("Failed to parse CloudFormation template");
+        let infra_template = InfratructureTemplate {
+            cloudformation: Some(parsed_cfn),
+        };
+        let line_marker =
+            parsers::get_yaml_line_marker(&template_file).expect("Failed to get YAML line marker");
+        let mut checker = Checker::new(&config, &mut error_reporter, &infra_template, &line_marker);
+        checker.run_checks();
+        if error_reporter.has_errors() {
+            eprintln!("{}", error_reporter.render_errors());
+            return ExitCode::FAILURE;
         }
-        _ => (),
     };
     ExitCode::SUCCESS
 }

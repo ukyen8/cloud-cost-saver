@@ -19,15 +19,9 @@ impl LineMarker for YamlLineMarker {
     }
 
     fn get_resource_span(&self, paths: Vec<&str>) -> Option<&Span> {
-        let mut node = match self.node.as_mapping()?.get("Resources") {
-            Some(n) => n,
-            None => return None,
-        };
+        let mut node = self.node.as_mapping()?.get("Resources")?;
         for path in paths {
-            node = match node.as_mapping()?.get(path) {
-                Some(n) => n,
-                None => return None,
-            };
+            node = node.as_mapping()?.get(path)?;
         }
         Some(node.span())
     }

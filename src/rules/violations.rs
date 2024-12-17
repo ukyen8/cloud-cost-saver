@@ -17,22 +17,16 @@ impl Violation for LambdaViolation {
     fn message(&self) -> String {
         match self {
             LambdaViolation::ARMArchitecture => {
-                format!(
-                    "Consider using ARM architecture. \
-                Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions."
-                )
+                "Consider using ARM architecture. \
+                Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions.".to_string()
             }
             LambdaViolation::MissingLogGroup => {
-                format!(
-                    "Lambda function creates a log group automatically when invoked for the first time with no expiry. \
-                Please explicitly create a log group with a retention policy."
-                )
+                "Lambda function creates a log group automatically when invoked for the first time with no expiry. \
+                Please explicitly create a log group with a retention policy.".to_string()
             }
             LambdaViolation::MissingTag => {
-                format!(
-                    "The Lambda function is missing a tag. \
-                Tags are useful for budgeting and identifying areas for cost optimization."
-                )
+                "The Lambda function is missing a tag. \
+                Tags are useful for budgeting and identifying areas for cost optimization.".to_string()
             }
         }
     }
@@ -57,19 +51,13 @@ impl Violation for CloudWatchViolation {
     fn message(&self) -> String {
         match self {
             CloudWatchViolation::LogRetentionTooLong => {
-                format!(
-                    "The log group retention period is too long. Consider reducing it to save costs and improve log management efficiency."
-                )
+                "The log group retention period is too long. Consider reducing it to save costs and improve log management efficiency.".to_string()
             }
             CloudWatchViolation::NoLogRetention => {
-                format!(
-                    "The log group has no retention policy. Consider setting a retention policy to save costs and improve log management efficiency."
-                )
+                "The log group has no retention policy. Consider setting a retention policy to save costs and improve log management efficiency.".to_string()
             }
             CloudWatchViolation::InfrequentAccessLogGroupClass => {
-                format!(
-                    "The log group is using STANDARD class. Consider using INFREQUENT_ACCESS to save costs."
-                )
+                "The log group is using STANDARD class. Consider using INFREQUENT_ACCESS to save costs.".to_string()
             }
         }
     }
