@@ -135,11 +135,11 @@ mod tests_cfn {
             }
         }
 
-        fn get_error_reporter<'a>(path: &str) -> ErrorReporter {
+        fn get_error_reporter(path: &str) -> ErrorReporter {
             ErrorReporter::new(&format!("src/fixtures/aws/{}", path))
         }
 
-        fn get_cloudformation<'a>(path: &str) -> CloudFormation {
+        fn get_cloudformation(path: &str) -> CloudFormation {
             parse_cloudformation(&format!("src/fixtures/aws/{}", path)).unwrap()
         }
 
