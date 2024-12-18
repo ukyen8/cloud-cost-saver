@@ -15,7 +15,7 @@ pub trait IaCParameter {
 
 #[allow(unused)]
 pub trait IaCMapping {
-    fn get_value(&self, key1: &str, key2: &str) -> Option<String>;
+    fn get_value(&self, key1: &str, key2: &str) -> Option<serde_yaml::Value>;
 }
 
 #[allow(unused)]
