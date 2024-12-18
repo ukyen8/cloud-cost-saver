@@ -25,8 +25,9 @@ cd cloud-cost-saver
 To analyze a CloudFormation template, use the following command:
 
 ```sh
-cargo run -- aws --template src/sample-cfn.yaml --config .cloudsaving.yaml
+cargo run -- aws --template src/fixtures/aws/cfn-testing.yaml --environment default --samconfig src/fixtures/aws/samconfig.toml --config .cloudsaving.yaml
 ```
+
 ## Example Output
 
 When you run the analysis, you might see output similar to the following:

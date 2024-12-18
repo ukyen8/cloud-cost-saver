@@ -307,6 +307,7 @@ pub(crate) fn parse_samconfig(file_path: &str) -> Result<SamConfig, Box<dyn std:
 }
 
 mod test {
+    #[allow(unused_imports)]
     use super::*;
 
     #[test]
