@@ -83,8 +83,7 @@ impl CloudFormation {
                                             if let Some(map_sequence) =
                                                 tagged_value.value.as_sequence()
                                             {
-                                                let map_name = map_sequence
-                                                    .get(0)
+                                                let map_name = map_sequence.first()
                                                     .and_then(|v| v.as_str())
                                                     .expect("Map name not found");
                                                 let top_level_key = map_sequence.get(1);
@@ -107,8 +106,7 @@ impl CloudFormation {
                                                                 .and_then(|p| p.get(ref_value))
                                                                 .and_then(|parameter| {
                                                                     parameter.default.as_ref()
-                                                                })
-                                                                .map(|default| default.clone())
+                                                                }).cloned()
                                                                 .unwrap_or_else(|| {
                                                                     top_level_key.unwrap().clone()
                                                                 })
@@ -147,16 +145,6 @@ impl CloudFormation {
         }
     }
 
-    fn handle_ref(&self, tagged_value: &serde_yaml::Value) -> Option<serde_yaml::Value> {
-        if let Some(ref_value) = tagged_value.as_str() {
-            if let Some(parameter) = self.parameters.as_ref().and_then(|p| p.get(ref_value)) {
-                if let Some(default) = parameter.default.as_ref() {
-                    return Some(default.clone());
-                }
-            }
-        }
-        None
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -443,9 +431,8 @@ mod test {
         assert_eq!(samconfig.version, Some("0.1".to_string()));
         assert_eq!(samconfig.environments.len(), 2);
         let default_env = samconfig.environments.get("default").unwrap();
-        assert_eq!(
-            default_env.deploy.as_ref().unwrap().parameters.is_some(),
-            true
+        assert!(
+            default_env.deploy.as_ref().unwrap().parameters.is_some()
         );
         let deploy_params = default_env
             .deploy

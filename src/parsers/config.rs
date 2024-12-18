@@ -199,7 +199,7 @@ mod tests {
             .rules
             .get(&RuleType::LambdaArchitectureARM)
             .unwrap();
-        assert_eq!(lambda_architecture_arm.enabled, true);
+        assert!(lambda_architecture_arm.enabled);
 
         let lambda_missing_tag = cloudformation
             .rules
