@@ -63,18 +63,78 @@ impl CloudFormation {
                         {
                             for (_, v) in function_environment_variables_map.iter_mut() {
                                 if let serde_yaml::Value::Tagged(tagged_value) = v {
-                                    if tagged_value.tag.to_string().as_str() == "!Ref" {
-                                        if let Some(ref_value) = tagged_value.value.as_str() {
-                                            if let Some(parameter) = self
-                                                .parameters
-                                                .as_ref()
-                                                .and_then(|p| p.get(ref_value))
-                                            {
-                                                if let Some(default) = parameter.default.as_ref() {
-                                                    *v = default.clone();
+                                    match tagged_value.tag.to_string().as_str() {
+                                        "!Ref" => {
+                                            if let Some(ref_value) = tagged_value.value.as_str() {
+                                                if let Some(parameter) = self
+                                                    .parameters
+                                                    .as_ref()
+                                                    .and_then(|p| p.get(ref_value))
+                                                {
+                                                    if let Some(default) =
+                                                        parameter.default.as_ref()
+                                                    {
+                                                        *v = default.clone();
+                                                    }
                                                 }
                                             }
                                         }
+                                        "!FindInMap" => {
+                                            if let Some(map_sequence) =
+                                                tagged_value.value.as_sequence()
+                                            {
+                                                let map_name = map_sequence
+                                                    .first()
+                                                    .and_then(|v| v.as_str())
+                                                    .expect("Map name not found");
+                                                let top_level_key = map_sequence.get(1);
+                                                let second_level_key = map_sequence
+                                                    .get(2)
+                                                    .and_then(|v| v.as_str())
+                                                    .expect("Second level key not found");
+
+                                                // Handle nested !Ref in top_level_key
+                                                let top_level_key = if let Some(
+                                                    serde_yaml::Value::Tagged(ref_tagged_value),
+                                                ) = top_level_key
+                                                {
+                                                    if ref_tagged_value.tag == "!Ref" {
+                                                        ref_tagged_value
+                                                            .value
+                                                            .as_str()
+                                                            .and_then(|ref_value| {
+                                                                self.parameters
+                                                                    .as_ref()
+                                                                    .and_then(|p| p.get(ref_value))
+                                                                    .and_then(|parameter| {
+                                                                        parameter.default.clone()
+                                                                    })
+                                                            })
+                                                            .unwrap_or_else(|| {
+                                                                top_level_key.unwrap().clone()
+                                                            })
+                                                    } else {
+                                                        top_level_key.unwrap().clone()
+                                                    }
+                                                } else {
+                                                    top_level_key.unwrap().clone()
+                                                };
+
+                                                if let Some(find_map) = self
+                                                    .mappings
+                                                    .as_ref()
+                                                    .and_then(|m| m.get(map_name))
+                                                {
+                                                    if let Some(taget_value) = find_map.get_value(
+                                                        top_level_key.as_str().unwrap(),
+                                                        second_level_key,
+                                                    ) {
+                                                        *v = taget_value.clone();
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        _ => {}
                                     }
                                 }
                             }
@@ -117,11 +177,11 @@ impl IaCParameter for Parameter {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Mapping {
     #[serde(flatten)]
-    map: HashMap<String, HashMap<String, String>>,
+    map: HashMap<String, HashMap<String, serde_yaml::Value>>,
 }
 
 impl IaCMapping for Mapping {
-    fn get_value(&self, key1: &str, key2: &str) -> Option<String> {
+    fn get_value(&self, key1: &str, key2: &str) -> Option<serde_yaml::Value> {
         self.map.get(key1).and_then(|v| v.get(key2).cloned())
     }
 }
@@ -358,6 +418,10 @@ mod test {
             environment,
             &serde_yaml::Value::String("default".to_string())
         );
+        let powertools_logger_sample_rate = function_environment_variables
+            .get("POWERTOOLS_LOGGER_SAMPLE_RATE")
+            .unwrap();
+        assert_eq!(powertools_logger_sample_rate, &serde_yaml::Value::from(1));
     }
 
     #[test]
@@ -366,10 +430,7 @@ mod test {
         assert_eq!(samconfig.version, Some("0.1".to_string()));
         assert_eq!(samconfig.environments.len(), 2);
         let default_env = samconfig.environments.get("default").unwrap();
-        assert_eq!(
-            default_env.deploy.as_ref().unwrap().parameters.is_some(),
-            true
-        );
+        assert!(default_env.deploy.as_ref().unwrap().parameters.is_some());
         let deploy_params = default_env
             .deploy
             .as_ref()

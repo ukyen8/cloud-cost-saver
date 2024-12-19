@@ -129,17 +129,17 @@ mod tests_cfn {
             for rule in default_rule_config.rules.values_mut() {
                 rule.enabled = false;
             }
-            let config = Config {
+
+            Config {
                 cloudformation: Some(default_rule_config),
-            };
-            config
+            }
         }
 
-        fn get_error_reporter<'a>(path: &str) -> ErrorReporter {
+        fn get_error_reporter(path: &str) -> ErrorReporter {
             ErrorReporter::new(&format!("src/fixtures/aws/{}", path))
         }
 
-        fn get_cloudformation<'a>(path: &str) -> CloudFormation {
+        fn get_cloudformation(path: &str) -> CloudFormation {
             parse_cloudformation(&format!("src/fixtures/aws/{}", path)).unwrap()
         }
 
@@ -187,7 +187,7 @@ mod tests_cfn {
                 }
             }
 
-            fn create_checker<'a>(&'a mut self) -> Checker<'a, YamlLineMarker> {
+            fn create_checker(&mut self) -> Checker<'_, YamlLineMarker> {
                 Checker::new(
                     &self.config,
                     &mut self.error_reporter,

@@ -15,14 +15,6 @@ Parameters:
     Type: String
     Default: "INFO"
 
-Mappings:
-  Environments:
-    default:
-      Name: "Value"
-    prod:
-      Name: "Value"
-
-
 Globals:
   Function:
     Timeout: 60
@@ -32,6 +24,14 @@ Globals:
         POWERTOOLS_SERVICE_NAME: !Join [ '-', [ !Ref AWS::StackName, 'xray' ] ]
         REGION_NAME: !Ref AWS::Region
         ENVIRONMENT: !Ref Environment
+        POWERTOOLS_LOGGER_SAMPLE_RATE: !FindInMap [ "Environments", !Ref Environment, "PowerToolsLoggerSampleRate" ]
+
+Mappings:
+  Environments:
+    default:
+      PowerToolsLoggerSampleRate: 1
+    prod:
+      PowerToolsLoggerSampleRate: 0.01
 
 Resources:
   ExampleResource:
