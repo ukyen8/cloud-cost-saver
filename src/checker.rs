@@ -129,7 +129,7 @@ mod tests_cfn {
             for rule in default_rule_config.rules.values_mut() {
                 rule.enabled = false;
             }
-            
+
             Config {
                 cloudformation: Some(default_rule_config),
             }
