@@ -60,6 +60,7 @@ impl RuleTypeConfigDetail {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[allow(non_camel_case_types)]
 pub enum RuleType {
     LAMBDA_001,
     LAMBDA_002,

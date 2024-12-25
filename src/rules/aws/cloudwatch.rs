@@ -72,7 +72,7 @@ pub fn check_cloudwatch_log_group_class<L: LineMarker>(
                 if let AWSResourceType::CloudWatch = &resource.type_ {
                     if let Some(properties) = &resource.properties {
                         if let Some(log_group_class) = properties.get("LogGroupClass") {
-                            if log_group_class.as_str().map_or(false, |v| v == "STANDARD") {
+                            if log_group_class.as_str() == Some("STANDARD") {
                                 error_reporter.add_error(
                                     Box::new(CloudWatchViolation::InfrequentAccessLogGroupClass),
                                     key,
