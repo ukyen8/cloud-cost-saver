@@ -60,6 +60,14 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
                     self.line_marker,
                 );
             }
+
+            if rule_config.enabled(RuleType::CWInfrequentAccessLogGroupClass) {
+                aws::cloudwatch::check_cloudwatch_log_group_class(
+                    self.infra_template,
+                    self.error_reporter,
+                    self.line_marker,
+                );
+            }
         }
     }
 }
@@ -237,8 +245,8 @@ mod tests_cfn {
             checker.run_checks();
 
             let expected = ExpectedViolations::new(vec![
-                ExpectedViolation::new(&violation, "MyLambdaFunction2"),
                 ExpectedViolation::new(&violation, "MyLambdaFunction"),
+                ExpectedViolation::new(&violation, "MyLambdaFunction2"),
             ]);
             expected.assert_all_match(&context.error_reporter.render_errors());
         }
@@ -250,7 +258,13 @@ mod tests_cfn {
             Some(RuleTypeConfigDetail::Threshold { threshold: (14) }),
             CloudWatchViolation::LogRetentionTooLong,
         )]
-        fn test_cw_001(
+        #[case(
+            "cfn-testing.yaml",
+            RuleType::CWLogRetentionPolicy,
+            None,
+            CloudWatchViolation::NoLogRetention
+        )]
+        fn test_cw_001_002(
             #[case] template_name: &str,
             #[case] rule_type: RuleType,
             #[case] config_detail: Option<RuleTypeConfigDetail>,
@@ -261,8 +275,38 @@ mod tests_cfn {
             let mut checker = context.create_checker();
             checker.run_checks();
 
+            let log_group_name = if violation == CloudWatchViolation::LogRetentionTooLong {
+                "MyLogGroup"
+            } else {
+                "MyLogGroup2"
+            };
             let expected =
-                ExpectedViolations::new(vec![ExpectedViolation::new(&violation, "MyLogGroupp")]);
+                ExpectedViolations::new(vec![ExpectedViolation::new(&violation, log_group_name)]);
+            expected.assert_all_match(&context.error_reporter.render_errors());
+        }
+
+        #[rstest]
+        #[case(
+            "cfn-testing.yaml",
+            RuleType::CWInfrequentAccessLogGroupClass,
+            None,
+            CloudWatchViolation::InfrequentAccessLogGroupClass
+        )]
+        fn test_cw_003(
+            #[case] template_name: &str,
+            #[case] rule_type: RuleType,
+            #[case] config_detail: Option<RuleTypeConfigDetail>,
+            #[case] violation: CloudWatchViolation,
+            setup_checker: impl Fn(&str, RuleType, Option<RuleTypeConfigDetail>) -> TestContext,
+        ) {
+            let mut context = setup_checker(template_name, rule_type, config_detail);
+            let mut checker = context.create_checker();
+            checker.run_checks();
+
+            let expected = ExpectedViolations::new(vec![
+                ExpectedViolation::new(&violation, "MyLogGroup"),
+                ExpectedViolation::new(&violation, "MyLogGroup2"),
+            ]);
             expected.assert_all_match(&context.error_reporter.render_errors());
         }
     }

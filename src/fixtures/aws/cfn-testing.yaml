@@ -2,10 +2,16 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: "Example CloudFormation Template"
 
 Resources:
-  MyLogGroupp:
+  MyLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
       RetentionInDays: 30
+
+  MyLogGroup2:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: MyLogGroup2
+      LogGroupClass: STANDARD
 
   MyLambdaFunction:
     Type: "AWS::Lambda::Function"

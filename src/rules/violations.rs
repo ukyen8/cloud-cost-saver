@@ -40,7 +40,7 @@ impl Violation for LambdaViolation {
     }
 }
 
-#[derive(EnumIter, Debug, Display)]
+#[derive(EnumIter, Debug, Display, PartialEq)]
 pub enum CloudWatchViolation {
     LogRetentionTooLong,
     NoLogRetention,
