@@ -54,3 +54,39 @@ pub fn check_cloudwatch_log_group_retention<L: LineMarker>(
         }
     }
 }
+
+pub fn check_cloudwatch_log_group_class<L: LineMarker>(
+    infra_template: &InfratructureTemplate,
+    error_reporter: &mut ErrorReporter,
+    line_marker: &L,
+) {
+    if let Some(cloudformation) = &infra_template.cloudformation {
+        if let Some(resources) = &cloudformation.resources {
+            for (key, resource) in resources {
+                if let AWSResourceType::CloudWatch = &resource.type_ {
+                    if let Some(properties) = &resource.properties {
+                        if let Some(log_group_class) = properties.get("LogGroupClass") {
+                            if log_group_class.as_str().map_or(false, |v| v == "STANDARD") {
+                                error_reporter.add_error(
+                                    Box::new(CloudWatchViolation::InfrequentAccessLogGroupClass),
+                                    key,
+                                    line_marker
+                                        .get_resource_span(vec![key, "Properties", "LogGroupClass"])
+                                        .copied(),
+                                );
+                            }
+                        } else {
+                            error_reporter.add_error(
+                                Box::new(CloudWatchViolation::InfrequentAccessLogGroupClass),
+                                key,
+                                line_marker
+                                    .get_resource_span(vec![key, "Properties"])
+                                    .copied(),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
