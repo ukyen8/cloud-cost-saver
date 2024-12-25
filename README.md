@@ -64,6 +64,40 @@ This section lists the various violations that this tool can detect in AWS Cloud
 | CW-002 | The log group has no retention policy. Consider setting a retention policy to save costs and improve log management efficiency. | true |
 | CW-003 | The log group is using STANDARD class. Consider using INFREQUENT_ACCESS to save costs. | false |
 
+## Configuration
+
+### AWS CloudFormation
+
+To configure the Cloud Cost Saver for AWS CloudFormation, create a `.cloudsaving.yaml` file in the root of your project. This file should contain the following settings:
+
+```yaml
+cloudformation:
+    rules:
+        LAMBDA_001:
+            enabled: true
+        LAMBDA_002:
+            enabled: true
+        LAMBDA_003:
+            enabled: true
+            values:
+                - tag1
+                - tag2
+        CW_001:
+            enabled: true
+            threshold: 14
+        CW_002:
+            enabled: true
+        CW_003:
+            enabled: false
+```
+
+In this configuration:
+- `LAMBDA_001`, `LAMBDA_002`, and `LAMBDA_003` are enabled, with `LAMBDA_003` requiring specific tags (`tag1` and `tag2`).
+- `CW_001` is enabled with a threshold of 14 days for log retention.
+- `CW_002` is enabled to ensure log groups have a retention policy.
+- `CW_003` is disabled, meaning it will not check for the use of the `INFREQUENT_ACCESS` class for log groups.
+
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request on GitHub.
