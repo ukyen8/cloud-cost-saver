@@ -47,7 +47,6 @@ impl ErrorReporter {
     pub fn render_errors(&self) -> String {
         self.errors
             .iter()
-            .rev()
             .map(|e| {
                 let span_info = if let Some(span) = &e.span {
                     if let Some(start) = span.start() {

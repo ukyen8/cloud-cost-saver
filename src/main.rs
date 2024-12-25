@@ -42,9 +42,12 @@ fn main() -> ExitCode {
     if cloud_provider.as_str() == "aws" {
         let mut parsed_cfn =
             parse_cloudformation(&template_file).expect("Failed to parse CloudFormation template");
-        let samconfig = parse_samconfig(args.samconfig.as_deref().expect("samconfig is required"))
-            .expect("Failed to parse samconfig");
-        parsed_cfn.resolve_parameters(&samconfig, &environment);
+        if let Some(samconfig) = args.samconfig.as_deref() {
+            let samconfig = parse_samconfig(samconfig).expect("Failed to parse samconfig");
+            parsed_cfn.resolve_parameters(Some(&samconfig), &environment);
+        } else {
+            parsed_cfn.resolve_parameters(None, &environment);
+        }
         let infra_template = InfratructureTemplate {
             cloudformation: Some(parsed_cfn),
         };

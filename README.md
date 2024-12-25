@@ -43,9 +43,27 @@ In this output:
 - The text following the resource name is the issue description.
 - `src/fixtures/aws/cfn-testing.yaml:20` is the file path and line number where the issue was found.
 
-## Contributing
+## Violations
 
-Contributions are welcome! Please open an issue or submit a pull request on GitHub.
+### AWS CloudFormation
+
+This section lists the various violations that this tool can detect in AWS CloudFormation templates. Each violation is identified by an error code and includes a description of the issue and whether it is enabled by default.
+
+#### Lambda
+| Error Code | Description | Default enabled |
+|------------|-------------|-----------------|
+| LAMBDA-001 | Lambda function creates a log group automatically when invoked for the first time with no expiry Please explicitly create a log group with a retention policy.| true |
+| LAMBDA-002 | Consider using ARM architecture. Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions. | false |
+| LAMBDA-003 | The Lambda function is missing a tag. Tags are useful for budgeting and identifying areas for cost optimization. | false |
+
+#### CloudWatch
+
+| Error Code | Description | Default enabled |
+|------------|-------------|-----------------|
+| CW-001 | The log group retention period is too long. Consider reducing it to save costs and improve log management efficiency. | false |
+| CW-002 | The log group has no retention policy. Consider setting a retention policy to save costs and improve log management efficiency. | true |
+| CW-003 | The log group is using STANDARD class. Consider using INFREQUENT_ACCESS to save costs. | false |
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request on GitHub.
