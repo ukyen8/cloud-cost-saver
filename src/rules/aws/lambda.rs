@@ -17,9 +17,7 @@ pub fn check_lambda_missing_tag<L: LineMarker>(
                 if let AWSResourceType::LambdaFunction = &resource.type_ {
                     if let Some(properties) = &resource.properties {
                         if let Some(tags) = properties.get("Tags") {
-                            if let Some(rule_type) =
-                                rule_config.rules.get(&RuleType::LambdaMissingTag)
-                            {
+                            if let Some(rule_type) = rule_config.rules.get(&RuleType::LAMBDA_003) {
                                 if let Some(target_tags) = rule_type.config_detail.get_values() {
                                     // Check if at least one tag is defined in the resource
                                     let tag_exists = target_tags.iter().any(|target_tag| {
