@@ -28,7 +28,7 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
 
     pub(crate) fn run_checks(&mut self) {
         if let Some(rule_config) = &self.config.cloudformation {
-            if rule_config.enabled(RuleType::LambdaMissingTag) {
+            if rule_config.enabled(RuleType::LAMBDA_003) {
                 aws::lambda::check_lambda_missing_tag(
                     self.infra_template,
                     rule_config,
@@ -36,7 +36,7 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
                     self.line_marker,
                 );
             }
-            if rule_config.enabled(RuleType::LambdaArchitectureARM) {
+            if rule_config.enabled(RuleType::LAMBDA_002) {
                 aws::lambda::check_lambda_architecture_arm(
                     self.infra_template,
                     self.error_reporter,
@@ -44,7 +44,7 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
                 );
             }
 
-            if rule_config.enabled(RuleType::LambdaMissingLogGroup) {
+            if rule_config.enabled(RuleType::LAMBDA_001) {
                 aws::lambda::check_lambda_missing_log_group(
                     self.infra_template,
                     self.error_reporter,
@@ -52,7 +52,7 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
                 );
             }
 
-            if rule_config.enabled(RuleType::CWLogRetentionPolicy) {
+            if rule_config.enabled(RuleType::CW_001) || rule_config.enabled(RuleType::CW_002) {
                 aws::cloudwatch::check_cloudwatch_log_group_retention(
                     self.infra_template,
                     rule_config,
@@ -61,7 +61,7 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
                 );
             }
 
-            if rule_config.enabled(RuleType::CWInfrequentAccessLogGroupClass) {
+            if rule_config.enabled(RuleType::CW_003) {
                 aws::cloudwatch::check_cloudwatch_log_group_class(
                     self.infra_template,
                     self.error_reporter,
@@ -215,7 +215,7 @@ mod tests_cfn {
         #[rstest]
         #[case(
             "cfn-testing.yaml",
-            RuleType::LambdaMissingTag,
+            RuleType::LAMBDA_003,
             Some(RuleTypeConfigDetail::Values {
                 values: vec![String::from("tag1")]
             }),
@@ -223,13 +223,13 @@ mod tests_cfn {
         )]
         #[case(
             "cfn-testing.yaml",
-            RuleType::LambdaArchitectureARM,
+            RuleType::LAMBDA_002,
             None,
             LambdaViolation::ARMArchitecture
         )]
         #[case(
             "cfn-testing.yaml",
-            RuleType::LambdaMissingLogGroup,
+            RuleType::LAMBDA_001,
             None,
             LambdaViolation::MissingLogGroup
         )]
@@ -254,13 +254,13 @@ mod tests_cfn {
         #[rstest]
         #[case(
             "cfn-testing.yaml",
-            RuleType::CWLogRetentionPolicy,
+            RuleType::CW_001,
             Some(RuleTypeConfigDetail::Threshold { threshold: (14) }),
             CloudWatchViolation::LogRetentionTooLong,
         )]
         #[case(
             "cfn-testing.yaml",
-            RuleType::CWLogRetentionPolicy,
+            RuleType::CW_002,
             None,
             CloudWatchViolation::NoLogRetention
         )]
@@ -288,7 +288,7 @@ mod tests_cfn {
         #[rstest]
         #[case(
             "cfn-testing.yaml",
-            RuleType::CWInfrequentAccessLogGroupClass,
+            RuleType::CW_003,
             None,
             CloudWatchViolation::InfrequentAccessLogGroupClass
         )]

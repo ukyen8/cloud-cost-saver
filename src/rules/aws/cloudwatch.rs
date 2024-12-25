@@ -17,8 +17,11 @@ pub fn check_cloudwatch_log_group_retention<L: LineMarker>(
                 if let AWSResourceType::CloudWatch = &resource.type_ {
                     if let Some(properties) = &resource.properties {
                         if let Some(retention) = properties.get("RetentionInDays") {
+                            if !rule_config.enabled(RuleType::CW_001) {
+                                continue;
+                            }
                             if let Some(log_retention_days) =
-                                rule_config.rules.get(&RuleType::CWLogRetentionPolicy)
+                                rule_config.rules.get(&RuleType::CW_001)
                             {
                                 if let Some(threshold) =
                                     log_retention_days.config_detail.get_threshold()
@@ -40,6 +43,9 @@ pub fn check_cloudwatch_log_group_retention<L: LineMarker>(
                                 }
                             }
                         } else {
+                            if !rule_config.enabled(RuleType::CW_002) {
+                                continue;
+                            }
                             error_reporter.add_error(
                                 Box::new(CloudWatchViolation::NoLogRetention),
                                 key,

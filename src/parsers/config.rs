@@ -61,11 +61,12 @@ impl RuleTypeConfigDetail {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum RuleType {
-    LambdaMissingTag,
-    LambdaArchitectureARM,
-    LambdaMissingLogGroup,
-    CWLogRetentionPolicy,
-    CWInfrequentAccessLogGroupClass,
+    LAMBDA_001,
+    LAMBDA_002,
+    LAMBDA_003,
+    CW_001,
+    CW_002,
+    CW_003,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -85,35 +86,42 @@ impl Default for RuleConfig {
 
         // Default configurations for each rule
         rules.insert(
-            RuleType::LambdaMissingTag,
+            RuleType::LAMBDA_003,
             RuleTypeConfig {
                 enabled: true,
                 config_detail: RuleTypeConfigDetail::Values { values: vec![] },
             },
         );
         rules.insert(
-            RuleType::LambdaArchitectureARM,
+            RuleType::LAMBDA_002,
             RuleTypeConfig {
                 enabled: true,
                 config_detail: RuleTypeConfigDetail::Simple,
             },
         );
         rules.insert(
-            RuleType::LambdaMissingLogGroup,
+            RuleType::LAMBDA_001,
             RuleTypeConfig {
                 enabled: true,
                 config_detail: RuleTypeConfigDetail::Simple,
             },
         );
         rules.insert(
-            RuleType::CWLogRetentionPolicy,
+            RuleType::CW_001,
             RuleTypeConfig {
                 enabled: true,
                 config_detail: RuleTypeConfigDetail::Threshold { threshold: 30 },
             },
         );
         rules.insert(
-            RuleType::CWInfrequentAccessLogGroupClass,
+            RuleType::CW_002,
+            RuleTypeConfig {
+                enabled: true,
+                config_detail: RuleTypeConfigDetail::Simple,
+            },
+        );
+        rules.insert(
+            RuleType::CW_003,
             RuleTypeConfig {
                 enabled: false,
                 config_detail: RuleTypeConfigDetail::Simple,
@@ -169,16 +177,13 @@ mod tests {
         assert!(config.cloudformation.is_some());
         let cloudformation = config.cloudformation.unwrap();
 
-        assert!(cloudformation.enabled(RuleType::LambdaMissingTag));
-        assert!(cloudformation.enabled(RuleType::LambdaArchitectureARM));
-        assert!(cloudformation.enabled(RuleType::LambdaMissingLogGroup));
-        assert!(cloudformation.enabled(RuleType::CWLogRetentionPolicy));
-        assert!(!cloudformation.enabled(RuleType::CWInfrequentAccessLogGroupClass));
+        assert!(cloudformation.enabled(RuleType::LAMBDA_003));
+        assert!(cloudformation.enabled(RuleType::LAMBDA_002));
+        assert!(cloudformation.enabled(RuleType::LAMBDA_001));
+        assert!(cloudformation.enabled(RuleType::CW_001));
+        assert!(!cloudformation.enabled(RuleType::CW_003));
 
-        let cw_log_retention_policy = cloudformation
-            .rules
-            .get(&RuleType::CWLogRetentionPolicy)
-            .unwrap();
+        let cw_log_retention_policy = cloudformation.rules.get(&RuleType::CW_001).unwrap();
         assert_eq!(
             cw_log_retention_policy
                 .config_detail
@@ -195,25 +200,16 @@ mod tests {
         assert!(config.cloudformation.is_some());
         let cloudformation = config.cloudformation.unwrap();
 
-        let lambda_architecture_arm = cloudformation
-            .rules
-            .get(&RuleType::LambdaArchitectureARM)
-            .unwrap();
+        let lambda_architecture_arm = cloudformation.rules.get(&RuleType::LAMBDA_002).unwrap();
         assert!(lambda_architecture_arm.enabled);
 
-        let lambda_missing_tag = cloudformation
-            .rules
-            .get(&RuleType::LambdaMissingTag)
-            .unwrap();
+        let lambda_missing_tag = cloudformation.rules.get(&RuleType::LAMBDA_003).unwrap();
         assert_eq!(
             lambda_missing_tag.config_detail.get_values().unwrap(),
             &vec!["tag1".to_string(), "tag2".to_string()]
         );
 
-        let cw_log_retention_policy = cloudformation
-            .rules
-            .get(&RuleType::CWLogRetentionPolicy)
-            .unwrap();
+        let cw_log_retention_policy = cloudformation.rules.get(&RuleType::CW_001).unwrap();
         assert_eq!(
             cw_log_retention_policy
                 .config_detail
@@ -229,7 +225,7 @@ mod tests {
         let yaml = r#"
         cloudformation:
           rules:
-            LambdaMissingLogGroup:
+            LAMBDA_002:
               threshold: 14
         "#;
 
