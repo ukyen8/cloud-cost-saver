@@ -106,7 +106,7 @@ mod tests_cfn {
                 .collect();
             for (i, expected) in self.0.iter().enumerate() {
                 let expected_str = format!(
-                    "{}: {}: {}",
+                    "{}:{}:{}",
                     expected.code, expected.resource, expected.message
                 );
                 let actual_line = actual_lines.get(i).unwrap_or(&"");

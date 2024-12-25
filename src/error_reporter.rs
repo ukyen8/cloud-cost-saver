@@ -58,7 +58,7 @@ impl ErrorReporter {
                     self.file_path.clone()
                 };
                 format!(
-                    "{}: {}: {}\n{}\n",
+                    "{}:{}:{}\n{}\n",
                     e.violation.code(),
                     e.resource_name,
                     e.violation.message(),

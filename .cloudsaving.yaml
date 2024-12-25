@@ -1,16 +1,18 @@
 cloudformation:
   rules:
-    LambdaMissingLogGroup:
+    LAMBDA_001:
       enabled: true
-    LambdaArchitectureARM:
+    LAMBDA_002:
       enabled: true
-    LambdaMissingTag:
+    LAMBDA_003:
       enabled: true
-      tags:
+      values:
         - tag1
         - tag2
-    CWLogRetentionPolicy:
+    CW_001:
       enabled: true
       threshold: 14
-    CWInfrequentAccessLogGroupClass:
+    CW_002:
+      enabled: true
+    CW_003:
       enabled: false
