@@ -23,11 +23,11 @@ pub(crate) struct CloudFormation {
 }
 
 impl CloudFormation {
-    pub fn resolve_parameters(&mut self, samconfig: Option<&SamConfig>, environment: &str) {
+    pub fn resolve_parameters(&mut self, samconfig: Option<&SamConfig>, environment: Option<&str>) {
         if let Some(samconfig) = samconfig {
             let samconfig_section = samconfig
                 .environments
-                .get(environment)
+                .get(environment.expect("Environment is None"))
                 .expect("Environment not found in samconfig");
 
             // Check if the parameter is overridden in the samconfig

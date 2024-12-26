@@ -97,6 +97,29 @@ In this configuration:
 - `CW_002` is enabled to ensure log groups have a retention policy.
 - `CW_003` is disabled, meaning it will not check for the use of the `INFREQUENT_ACCESS` class for log groups.
 
+### Detailed Configuration Guide
+
+The `.cloudsaving.yaml` file allows you to customize the behavior of the Cloud Cost Saver tool. Below is a detailed explanation of each configuration option available for AWS CloudFormation:
+
+#### Rules Configuration
+
+Each rule can be enabled or disabled and may have additional settings. The general structure for configuring rules is as follows:
+
+```yaml
+cloudformation:
+    rules:
+        RULE_CODE:
+            enabled: true/false
+            values:
+                - value1
+                - value2
+            threshold: number
+```
+
+- `RULE_CODE`: The unique identifier for the rule (e.g., `LAMBDA_001`).
+- `enabled`: A boolean value (`true` or `false`) indicating whether the rule is active.
+- `values`: A list of specific values required by the rule (optional). Only include this if the rule requires specific values.
+- `threshold`: A numerical threshold for the rule (optional). Only include this if the rule supports a threshold.
 
 ## Contributing
 
