@@ -204,17 +204,15 @@ pub fn check_lambda_maxmimum_retry_attempts<L: LineMarker>(
                                 key,
                                 line_marker.get_resource_span(vec![key]).copied(),
                             );
-                        } else {
-                            if global_maximim_retry_attempts
-                                .and_then(|v| v.as_u64())
-                                .is_none_or(|v| v != max_retry_attempts_config)
-                            {
-                                error_reporter.add_error(
-                                    Box::new(LambdaViolation::MaximumRetryAttempts),
-                                    key,
-                                    line_marker.get_resource_span(vec![key]).copied(),
-                                );
-                            }
+                        } else if global_maximim_retry_attempts
+                            .and_then(|v| v.as_u64())
+                            .is_none_or(|v| v != max_retry_attempts_config)
+                        {
+                            error_reporter.add_error(
+                                Box::new(LambdaViolation::MaximumRetryAttempts),
+                                key,
+                                line_marker.get_resource_span(vec![key]).copied(),
+                            );
                         }
                     }
                 }
