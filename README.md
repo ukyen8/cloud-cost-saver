@@ -55,6 +55,7 @@ This section lists the various violations that this tool can detect in AWS Cloud
 | LAMBDA-001 | Lambda function creates a log group automatically when invoked for the first time with no expiry Please explicitly create a log group with a retention policy.| true |
 | LAMBDA-002 | Consider using ARM architecture. Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions. | false |
 | LAMBDA-003 | The Lambda function is missing a tag. Tags are useful for budgeting and identifying areas for cost optimization. | false |
+| LAMBDA-004 | Asynchronously invoked Lambda functions have a default maximum retry attempts set to 2. Consider setting the maximum retry attempts to 0 to prevent unnecessary retries. For example, if your Lambda function is invoked via an SQS queue with 3 retries, a failure event may result in up to 9 retries. | true |
 
 #### CloudWatch
 
@@ -82,6 +83,9 @@ cloudformation:
             values:
                 - tag1
                 - tag2
+        LAMBDA_004:
+            enabled: true
+            threshold: 0
         CW_001:
             enabled: true
             threshold: 14
@@ -92,11 +96,34 @@ cloudformation:
 ```
 
 In this configuration:
-- `LAMBDA_001`, `LAMBDA_002`, and `LAMBDA_003` are enabled, with `LAMBDA_003` requiring specific tags (`tag1` and `tag2`).
+- `LAMBDA_001`, `LAMBDA_002`, and `LAMBDA_003` are enabled, with `LAMBDA_003` requiring specific tags (`tag1` and `tag2`) and `LAMBDA_004` with a threshold of 0 for retry attempts.
 - `CW_001` is enabled with a threshold of 14 days for log retention.
 - `CW_002` is enabled to ensure log groups have a retention policy.
 - `CW_003` is disabled, meaning it will not check for the use of the `INFREQUENT_ACCESS` class for log groups.
 
+### Detailed Configuration Guide
+
+The `.cloudsaving.yaml` file allows you to customize the behavior of the Cloud Cost Saver tool. Below is a detailed explanation of each configuration option available for AWS CloudFormation:
+
+#### Rules Configuration
+
+Each rule can be enabled or disabled and may have additional settings. The general structure for configuring rules is as follows:
+
+```yaml
+cloudformation:
+    rules:
+        RULE_CODE:
+            enabled: true/false
+            values:
+                - value1
+                - value2
+            threshold: number
+```
+
+- `RULE_CODE`: The unique identifier for the rule (e.g., `LAMBDA_001`).
+- `enabled`: A boolean value (`true` or `false`) indicating whether the rule is active.
+- `values`: A list of specific values required by the rule (optional). Only include this if the rule requires specific values.
+- `threshold`: A numerical threshold for the rule (optional). Only include this if the rule supports a threshold.
 
 ## Contributing
 

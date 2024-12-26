@@ -20,7 +20,7 @@ struct Args {
     template: String,
 
     #[arg(short, long)]
-    environment: String,
+    environment: Option<String>,
 
     #[arg(short, long)]
     samconfig: Option<String>,
@@ -44,9 +44,9 @@ fn main() -> ExitCode {
             parse_cloudformation(&template_file).expect("Failed to parse CloudFormation template");
         if let Some(samconfig) = args.samconfig.as_deref() {
             let samconfig = parse_samconfig(samconfig).expect("Failed to parse samconfig");
-            parsed_cfn.resolve_parameters(Some(&samconfig), &environment);
+            parsed_cfn.resolve_parameters(Some(&samconfig), environment.as_deref());
         } else {
-            parsed_cfn.resolve_parameters(None, &environment);
+            parsed_cfn.resolve_parameters(None, environment.as_deref());
         }
         let infra_template = InfratructureTemplate {
             cloudformation: Some(parsed_cfn),

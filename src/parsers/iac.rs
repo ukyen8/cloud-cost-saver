@@ -34,6 +34,7 @@ pub trait IaCOutput {
 #[derive(Debug, Serialize)]
 pub enum AWSResourceType {
     LambdaFunction,
+    LambdaServerlessFunction,
     CloudWatch,
     Unknown(String),
 }
@@ -45,7 +46,8 @@ impl<'de> Deserialize<'de> for AWSResourceType {
     {
         let cfn_type = String::deserialize(deserializer)?;
         let resource_type = match cfn_type.to_uppercase().as_str() {
-            "AWS::LAMBDA::FUNCTION" | "AWS::SERVERLESS::FUNCTION" => Self::LambdaFunction,
+            "AWS::LAMBDA::FUNCTION" => Self::LambdaFunction,
+            "AWS::SERVERLESS::FUNCTION" => Self::LambdaServerlessFunction,
             "AWS::LOGS::LOGGROUP" => Self::CloudWatch,
             _ => Self::Unknown(cfn_type),
         };

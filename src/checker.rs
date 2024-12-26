@@ -52,6 +52,15 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
                 );
             }
 
+            if rule_config.enabled(RuleType::LAMBDA_004) {
+                aws::lambda::check_lambda_maxmimum_retry_attempts(
+                    self.infra_template,
+                    rule_config,
+                    self.error_reporter,
+                    self.line_marker,
+                );
+            }
+
             if rule_config.enabled(RuleType::CW_001) || rule_config.enabled(RuleType::CW_002) {
                 aws::cloudwatch::check_cloudwatch_log_group_retention(
                     self.infra_template,
@@ -247,6 +256,31 @@ mod tests_cfn {
             let expected = ExpectedViolations::new(vec![
                 ExpectedViolation::new(&violation, "MyLambdaFunction"),
                 ExpectedViolation::new(&violation, "MyLambdaFunction2"),
+            ]);
+            expected.assert_all_match(&context.error_reporter.render_errors());
+        }
+
+        #[rstest]
+        #[case(
+            "cfn-lambda-004.yaml",
+            RuleType::LAMBDA_004,
+            Some(RuleTypeConfigDetail::Threshold { threshold: 0 }),
+            LambdaViolation::MaximumRetryAttempts
+        )]
+        fn test_lambda_004(
+            #[case] template_name: &str,
+            #[case] rule_type: RuleType,
+            #[case] config_detail: Option<RuleTypeConfigDetail>,
+            #[case] violation: LambdaViolation,
+            setup_checker: impl Fn(&str, RuleType, Option<RuleTypeConfigDetail>) -> TestContext,
+        ) {
+            let mut context = setup_checker(template_name, rule_type, config_detail);
+            let mut checker = context.create_checker();
+            checker.run_checks();
+
+            let expected = ExpectedViolations::new(vec![
+                ExpectedViolation::new(&violation, "MyLambdaFunction"),
+                ExpectedViolation::new(&violation, "MyLambdaFunction3"),
             ]);
             expected.assert_all_match(&context.error_reporter.render_errors());
         }

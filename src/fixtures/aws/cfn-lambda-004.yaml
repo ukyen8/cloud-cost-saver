@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Example CloudFormation Template"
+
+Globals:
+  Function:
+    EventInvokeConfig:
+      MaximumRetryAttempts: 2
+
+Resources:
+  MyLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "MyLambda1"
+      Handler: "index.handler"
+      Code:
+        S3Bucket: "lambda-functions"
+        S3Key: "function.zip"
+      Role: "arn:aws:iam::123456789012:role/execution_role"
+
+  MyLambdaFunction2:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "MyLambda2"
+      Handler: "index.handler"
+      Code:
+        S3Bucket: "lambda-functions"
+        S3Key: "function.zip"
+      Role: "arn:aws:iam::123456789012:role/execution_role"
+      EventInvokeConfig:
+        MaximumRetryAttempts: 0
+  
+  MyLambdaFunction3:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "MyLambda3"
+      Handler: "index.handler"
+      Code:
+        S3Bucket: "lambda-functions"
+        S3Key: "function.zip"
+      Role: "arn:aws:iam::123456789012:role/execution_role"
+      EventInvokeConfig:
+        MaximumRetryAttempts: 1
