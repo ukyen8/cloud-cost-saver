@@ -11,6 +11,7 @@ pub enum LambdaViolation {
     MissingLogGroup,
     ARMArchitecture,
     MissingTag,
+    MaximumRetryAttempts,
 }
 
 impl Violation for LambdaViolation {
@@ -27,6 +28,12 @@ impl Violation for LambdaViolation {
             LambdaViolation::MissingTag => {
                 "The Lambda function is missing a tag. \
                 Tags are useful for budgeting and identifying areas for cost optimization.".to_string()
+            },
+            LambdaViolation::MaximumRetryAttempts => {
+                "Asynchronously invoked Lambda functions have a default maximum retry attempts set to 2. \
+                Consider setting the maximum retry attempts to 0 to prevent unnecessary retries. \
+                For example, if your Lambda function is invoked via an SQS queue with 3 retries, \
+                a failure event may result in up to 9 retries.".to_string()
             }
         }
     }
@@ -36,6 +43,7 @@ impl Violation for LambdaViolation {
             LambdaViolation::MissingLogGroup => "LAMBDA-001".to_string(),
             LambdaViolation::ARMArchitecture => "LAMBDA-002".to_string(),
             LambdaViolation::MissingTag => "LAMBDA-003".to_string(),
+            LambdaViolation::MaximumRetryAttempts => "LAMBDA-004".to_string(),
         }
     }
 }

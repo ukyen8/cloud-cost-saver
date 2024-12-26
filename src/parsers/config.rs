@@ -65,6 +65,7 @@ pub enum RuleType {
     LAMBDA_001,
     LAMBDA_002,
     LAMBDA_003,
+    LAMBDA_004,
     CW_001,
     CW_002,
     CW_003,
@@ -105,6 +106,13 @@ impl Default for RuleConfig {
             RuleTypeConfig {
                 enabled: true,
                 config_detail: RuleTypeConfigDetail::Simple,
+            },
+        );
+        rules.insert(
+            RuleType::LAMBDA_004,
+            RuleTypeConfig {
+                enabled: true,
+                config_detail: RuleTypeConfigDetail::Threshold { threshold: 0 },
             },
         );
         rules.insert(

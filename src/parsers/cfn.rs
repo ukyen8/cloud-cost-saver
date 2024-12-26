@@ -214,15 +214,15 @@ impl IaCOutput for Output {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Globals {
     #[serde(rename = "Function")]
-    function: Option<HashMap<String, serde_yaml::Value>>,
+    pub function: Option<HashMap<String, serde_yaml::Value>>,
     #[serde(rename = "Api")]
-    api: Option<HashMap<String, serde_yaml::Value>>,
+    pub api: Option<HashMap<String, serde_yaml::Value>>,
     #[serde(rename = "HttpApi")]
-    http_api: Option<HashMap<String, serde_yaml::Value>>,
+    pub http_api: Option<HashMap<String, serde_yaml::Value>>,
     #[serde(rename = "StateMachine")]
-    state_machine: Option<HashMap<String, serde_yaml::Value>>,
+    pub state_machine: Option<HashMap<String, serde_yaml::Value>>,
     #[serde(rename = "SimpleTable")]
-    simple_table: Option<HashMap<String, serde_yaml::Value>>,
+    pub simple_table: Option<HashMap<String, serde_yaml::Value>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -239,6 +239,7 @@ impl IaCResource for Resource {
     fn get_type(&self) -> String {
         match &self.type_ {
             AWSResourceType::LambdaFunction => "AWS::Lambda::Function".to_string(),
+            AWSResourceType::LambdaServerlessFunction => "AWS::Serverless::Function".to_string(),
             AWSResourceType::CloudWatch => "AWS::Logs::LogGroup".to_string(),
             AWSResourceType::Unknown(t) => t.clone(),
         }
@@ -395,7 +396,7 @@ mod test {
         let mut cloudformation =
             parse_cloudformation("src/fixtures/aws/cfn-parsing-test.yaml").unwrap();
         let samconfig = parse_samconfig("src/fixtures/aws/samconfig.toml").unwrap();
-        cloudformation.resolve_parameters(Some(&samconfig), "default");
+        cloudformation.resolve_parameters(Some(&samconfig), Some("default"));
         let parameters = cloudformation.parameters.unwrap();
         let database_name = parameters.get("DatabaseName").unwrap();
         assert_eq!(
