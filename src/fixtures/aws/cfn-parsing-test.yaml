@@ -41,6 +41,10 @@ Resources:
       Handler: "index.handler"
       CodeUri: .
       Role: "arn:aws:iam::123456789012:role/execution_role"
+      Environment:
+        Variables:
+          DATABASE_NAME: !Ref DatabaseName
+          LOG_LEVEL: ERROR
 
 Outputs:
   ExampleOutput:
