@@ -144,6 +144,44 @@ impl CloudFormation {
                 }
             }
         }
+
+        // Apply Globals to Resources' properties
+        if let Some(resources) = self.resources.as_mut() {
+            for (_, resource) in resources {
+                if let AWSResourceType::LambdaFunction | AWSResourceType::LambdaServerlessFunction =
+                    &resource.type_
+                {
+                    if let Some(global_function_envs) = self
+                        .globals
+                        .as_ref()
+                        .and_then(|g| g.function.as_ref())
+                        .and_then(|f| f.get("Environment"))
+                        .and_then(|e| e.get("Variables"))
+                        .and_then(|v| v.as_mapping())
+                    {
+                        if let Some(properties) = resource.properties.as_mut() {
+                            let env_vars = properties
+                                .entry("Environment".to_string())
+                                .or_insert_with(|| {
+                                    serde_yaml::Value::Mapping(serde_yaml::Mapping::new())
+                                })
+                                .as_mapping_mut()
+                                .unwrap()
+                                .entry(serde_yaml::Value::String("Variables".to_string()))
+                                .or_insert_with(|| {
+                                    serde_yaml::Value::Mapping(serde_yaml::Mapping::new())
+                                })
+                                .as_mapping_mut()
+                                .unwrap();
+
+                            for (k, v) in global_function_envs {
+                                env_vars.entry(k.clone()).or_insert_with(|| v.clone());
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -420,6 +458,20 @@ mod test {
             environment,
             &serde_yaml::Value::String("default".to_string())
         );
+        let powertools_logger_sample_rate = function_environment_variables
+            .get("POWERTOOLS_LOGGER_SAMPLE_RATE")
+            .unwrap();
+        assert_eq!(powertools_logger_sample_rate, &serde_yaml::Value::from(1));
+
+        // Check if the global environment variables are applied to the resources
+        let resources = cloudformation.resources.as_ref().unwrap();
+        let lambda_function = resources.get("ExampleResource").unwrap();
+        let properties = lambda_function.properties.as_ref().unwrap();
+        let environment = properties.get("Environment").unwrap();
+        let function_environment_variables = environment.get("Variables").unwrap();
+        let log_level = function_environment_variables.get("LOG_LEVEL").unwrap();
+        // Defined in the resource properties won't be replaced with Globals
+        assert_eq!(log_level, &serde_yaml::Value::String("ERROR".to_string()));
         let powertools_logger_sample_rate = function_environment_variables
             .get("POWERTOOLS_LOGGER_SAMPLE_RATE")
             .unwrap();
