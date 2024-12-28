@@ -235,6 +235,27 @@ pub fn check_lambda_powertools_environment_variables<L: LineMarker>(
                                 }
                             }
                         }
+
+                        if rule_config.rules.get(&RuleType::LAMBDA_006).is_some() {
+                            if let Some(powertools_logger_log_event) =
+                                variables.get("POWERTOOLS_LOGGER_LOG_EVENT")
+                            {
+                                if powertools_logger_log_event.as_bool().unwrap_or(false) {
+                                    error_reporter.add_error(
+                                        Box::new(LambdaViolation::PowertoolsLoggerLogEvent),
+                                        key,
+                                        line_marker
+                                            .get_resource_span(vec![
+                                                key,
+                                                "Properties",
+                                                "Environment",
+                                                "Variables",
+                                            ])
+                                            .copied(),
+                                    );
+                                }
+                            }
+                        }
                     }
                 }
             }

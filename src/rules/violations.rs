@@ -13,6 +13,7 @@ pub enum LambdaViolation {
     MissingTag,
     MaximumRetryAttempts,
     PowertoolsLogLevel,
+    PowertoolsLoggerLogEvent,
 }
 
 impl Violation for LambdaViolation {
@@ -40,6 +41,10 @@ impl Violation for LambdaViolation {
                 "Set the POWERTOOLS_LOG_LEVEL environment variable to appropriate logging levels \
                 for different environments when using AWS Lambda Powertools. \
                 This helps in reducing logging costs.".to_string()
+            },
+            LambdaViolation::PowertoolsLoggerLogEvent => {
+                "Logging every incoming event may significantly increase cloud costs. \
+                Consider disabling POWERTOOLS_LOGGER_LOG_EVENT in the production environment to help reduce logging expenses.".to_string()
             }
         }
     }
@@ -51,6 +56,7 @@ impl Violation for LambdaViolation {
             LambdaViolation::MissingTag => "LAMBDA-003".to_string(),
             LambdaViolation::MaximumRetryAttempts => "LAMBDA-004".to_string(),
             LambdaViolation::PowertoolsLogLevel => "LAMBDA-005".to_string(),
+            LambdaViolation::PowertoolsLoggerLogEvent => "LAMBDA-006".to_string(),
         }
     }
 }

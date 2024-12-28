@@ -97,6 +97,7 @@ dependencies = [
  "clap",
  "indexmap",
  "marked-yaml",
+ "regex",
  "rstest",
  "serde",
  "serde_yaml",

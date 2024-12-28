@@ -82,6 +82,7 @@ pub enum RuleType {
     LAMBDA_003,
     LAMBDA_004,
     LAMBDA_005,
+    LAMBDA_006,
     CW_001,
     CW_002,
     CW_003,
@@ -104,24 +105,24 @@ impl Default for RuleConfig {
 
         // Default configurations for each rule
         rules.insert(
-            RuleType::LAMBDA_003,
+            RuleType::LAMBDA_001,
             RuleTypeConfig {
                 enabled: true,
-                config_detail: RuleTypeConfigDetail::Values { values: vec![] },
+                config_detail: RuleTypeConfigDetail::Simple,
             },
         );
         rules.insert(
             RuleType::LAMBDA_002,
             RuleTypeConfig {
-                enabled: true,
+                enabled: false,
                 config_detail: RuleTypeConfigDetail::Simple,
             },
         );
         rules.insert(
-            RuleType::LAMBDA_001,
+            RuleType::LAMBDA_003,
             RuleTypeConfig {
-                enabled: true,
-                config_detail: RuleTypeConfigDetail::Simple,
+                enabled: false,
+                config_detail: RuleTypeConfigDetail::Values { values: vec![] },
             },
         );
         rules.insert(
@@ -134,10 +135,17 @@ impl Default for RuleConfig {
         rules.insert(
             RuleType::LAMBDA_005,
             RuleTypeConfig {
-                enabled: true,
+                enabled: false,
                 config_detail: RuleTypeConfigDetail::Value {
                     value: "INFO".to_string(),
                 },
+            },
+        );
+        rules.insert(
+            RuleType::LAMBDA_006,
+            RuleTypeConfig {
+                enabled: true,
+                config_detail: RuleTypeConfigDetail::Simple,
             },
         );
         rules.insert(
@@ -211,8 +219,8 @@ mod tests {
         assert!(config.cloudformation.is_some());
         let cloudformation = config.cloudformation.unwrap();
 
-        assert!(cloudformation.enabled(RuleType::LAMBDA_003));
-        assert!(cloudformation.enabled(RuleType::LAMBDA_002));
+        assert!(!cloudformation.enabled(RuleType::LAMBDA_003));
+        assert!(!cloudformation.enabled(RuleType::LAMBDA_002));
         assert!(cloudformation.enabled(RuleType::LAMBDA_001));
         assert!(cloudformation.enabled(RuleType::CW_001));
         assert!(!cloudformation.enabled(RuleType::CW_003));
