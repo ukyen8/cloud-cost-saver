@@ -236,7 +236,7 @@ pub fn check_lambda_powertools_environment_variables<L: LineMarker>(
                             }
                         }
 
-                        if rule_config.rules.get(&RuleType::LAMBDA_006).is_some() {
+                        if rule_config.rules.contains_key(&RuleType::LAMBDA_006) {
                             if let Some(powertools_logger_log_event) =
                                 variables.get("POWERTOOLS_LOGGER_LOG_EVENT")
                             {
