@@ -150,15 +150,6 @@ pub fn check_lambda_maxmimum_retry_attempts<L: LineMarker>(
     line_marker: &L,
 ) {
     if let Some(cloudformation) = &infra_template.cloudformation {
-        let function_globals = &cloudformation
-            .globals
-            .as_ref()
-            .and_then(|f| f.function.as_ref());
-
-        let global_maximim_retry_attempts = function_globals
-            .and_then(|globals| globals.get("EventInvokeConfig"))
-            .and_then(|config| config.get("MaximumRetryAttempts"));
-
         // Fetch threshold from the rule configuration
         let max_retry_attempts_config = rule_config
             .rules
@@ -171,7 +162,6 @@ pub fn check_lambda_maxmimum_retry_attempts<L: LineMarker>(
                 if let AWSResourceType::LambdaServerlessFunction = &resource.type_ {
                     if let Some(properties) = &resource.properties {
                         // Fetch threshold from the rule configuration
-
                         if let Some(event_invoke_config) = properties.get("EventInvokeConfig") {
                             if let Some(maximum_retry_attempts) =
                                 event_invoke_config.get("MaximumRetryAttempts")
@@ -195,18 +185,6 @@ pub fn check_lambda_maxmimum_retry_attempts<L: LineMarker>(
                                     continue;
                                 }
                             }
-                        }
-
-                        // If no MaximumRetryAttempts is defined, check Global variables
-                        if global_maximim_retry_attempts
-                            .and_then(|v| v.as_u64())
-                            .is_none_or(|v| v != max_retry_attempts_config)
-                        {
-                            error_reporter.add_error(
-                                Box::new(LambdaViolation::MaximumRetryAttempts),
-                                key,
-                                line_marker.get_resource_span(vec![key]).copied(),
-                            );
                         }
                     }
                 }

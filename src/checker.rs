@@ -157,7 +157,10 @@ mod tests_cfn {
         }
 
         fn get_cloudformation(path: &str) -> CloudFormation {
-            parse_cloudformation(&format!("src/fixtures/aws/{}", path)).unwrap()
+            let mut parsed_cfn =
+                parse_cloudformation(&format!("src/fixtures/aws/{}", path)).unwrap();
+            parsed_cfn.resolve_parameters(None, None);
+            parsed_cfn
         }
 
         fn get_line_marker(path: &str) -> YamlLineMarker {
