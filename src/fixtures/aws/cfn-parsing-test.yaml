@@ -18,6 +18,10 @@ Parameters:
 Globals:
   Function:
     Timeout: 60
+    EventInvokeConfig:
+      MaximumRetryAttempts: 0
+    Architectures:
+      - arm64
     Environment:
       Variables:
         LOG_LEVEL: !Ref LogLevel

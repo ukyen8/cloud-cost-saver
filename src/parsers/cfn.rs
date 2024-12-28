@@ -151,15 +151,16 @@ impl CloudFormation {
                 if let AWSResourceType::LambdaFunction | AWSResourceType::LambdaServerlessFunction =
                     &resource.type_
                 {
-                    if let Some(global_function_envs) = self
-                        .globals
-                        .as_ref()
-                        .and_then(|g| g.function.as_ref())
-                        .and_then(|f| f.get("Environment"))
-                        .and_then(|e| e.get("Variables"))
-                        .and_then(|v| v.as_mapping())
+                    if let Some(global_function_settings) =
+                        self.globals.as_ref().and_then(|g| g.function.as_ref())
                     {
                         if let Some(properties) = resource.properties.as_mut() {
+                            // Apply global function environment variables to the resource
+                            let global_function_envs = global_function_settings
+                                .get("Environment")
+                                .and_then(|e| e.get("Variables"))
+                                .and_then(|v| v.as_mapping());
+
                             let env_vars = properties
                                 .entry("Environment".to_string())
                                 .or_insert_with(|| {
@@ -174,8 +175,30 @@ impl CloudFormation {
                                 .as_mapping_mut()
                                 .unwrap();
 
-                            for (k, v) in global_function_envs {
-                                env_vars.entry(k.clone()).or_insert_with(|| v.clone());
+                            if let Some(global_function_envs) = global_function_envs {
+                                for (k, v) in global_function_envs {
+                                    env_vars.entry(k.clone()).or_insert_with(|| v.clone());
+                                }
+                            }
+
+                            // Apply architecture
+                            if let Some(architecture) =
+                                global_function_settings.get("Architectures")
+                            {
+                                properties
+                                    .entry("Architectures".to_string())
+                                    .or_insert_with(|| architecture.clone());
+                            }
+
+                            // Apply event maximum retry attempts for serverless lambda function
+                            if let Some(event_invoke_config) =
+                                global_function_settings.get("EventInvokeConfig")
+                            {
+                                if let AWSResourceType::LambdaServerlessFunction = &resource.type_ {
+                                    properties
+                                        .entry("EventInvokeConfig".to_string())
+                                        .or_insert_with(|| event_invoke_config.clone());
+                                }
                             }
                         }
                     }
@@ -424,7 +447,7 @@ mod test {
         );
         assert_eq!(cloudformation.parameters.unwrap().len(), 4);
         assert_eq!(cloudformation.mappings.unwrap().len(), 1);
-        assert_eq!(cloudformation.globals.unwrap().function.unwrap().len(), 2);
+        assert_eq!(cloudformation.globals.unwrap().function.unwrap().len(), 4);
         assert_eq!(cloudformation.resources.unwrap().len(), 1);
         assert_eq!(cloudformation.outputs.unwrap().len(), 1);
     }
@@ -476,6 +499,21 @@ mod test {
             .get("POWERTOOLS_LOGGER_SAMPLE_RATE")
             .unwrap();
         assert_eq!(powertools_logger_sample_rate, &serde_yaml::Value::from(1));
+
+        // Check if the global architecture is applied to the resources
+        let architecture = properties.get("Architectures").unwrap();
+        assert_eq!(architecture, &serde_yaml::Value::from(vec!["arm64"]));
+        // Check if the global event invoke config is applied to the resources
+        let event_invoke_config = properties.get("EventInvokeConfig").unwrap();
+        let mut expected_mapping = serde_yaml::Mapping::new();
+        expected_mapping.insert(
+            serde_yaml::Value::String("MaximumRetryAttempts".to_string()),
+            serde_yaml::Value::Number(serde_yaml::Number::from(0)),
+        );
+        assert_eq!(
+            event_invoke_config,
+            &serde_yaml::Value::Mapping(expected_mapping)
+        );
     }
 
     #[test]
