@@ -63,6 +63,7 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
 
             if rule_config.enabled(RuleType::LAMBDA_005)
                 || rule_config.enabled(RuleType::LAMBDA_006)
+                || rule_config.enabled(RuleType::LAMBDA_007)
             {
                 aws::lambda::check_lambda_powertools_environment_variables(
                     self.infra_template,
@@ -144,7 +145,9 @@ mod tests_cfn {
         use crate::checker::Checker;
         use crate::error_reporter::ErrorReporter;
         use crate::parsers::cfn::{parse_cloudformation, CloudFormation};
-        use crate::parsers::config::{Config, RuleConfig, RuleType, RuleTypeConfigDetail};
+        use crate::parsers::config::{
+            Config, RuleConfig, RuleType, RuleTypeConfigDetail, ThresholdValue,
+        };
         use crate::parsers::get_yaml_line_marker;
         use crate::parsers::iac::InfratructureTemplate;
         use crate::parsers::YamlLineMarker;
@@ -278,7 +281,7 @@ mod tests_cfn {
         #[case(
             "cfn-lambda-examples.yaml",
             RuleType::LAMBDA_004,
-            Some(RuleTypeConfigDetail::Threshold { threshold: 0 }),
+            Some(RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Int(0) }),
             LambdaViolation::MaximumRetryAttempts
         )]
         fn test_lambda_004(
@@ -302,17 +305,11 @@ mod tests_cfn {
         #[rstest]
         #[case(
             "cfn-lambda-examples.yaml",
-            RuleType::LAMBDA_005,
-            Some(RuleTypeConfigDetail::Value { value: "ERROR".to_string() }),
-            LambdaViolation::PowertoolsLogLevel
+            RuleType::LAMBDA_007,
+            Some(RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Float(0.5) }),
+            LambdaViolation::PowertoolsLoggerSampleRate
         )]
-        #[case(
-            "cfn-lambda-examples.yaml",
-            RuleType::LAMBDA_006,
-            None,
-            LambdaViolation::PowertoolsLoggerLogEvent
-        )]
-        fn test_lambda_005_006(
+        fn test_lambda_005_006_007(
             #[case] template_name: &str,
             #[case] rule_type: RuleType,
             #[case] config_detail: Option<RuleTypeConfigDetail>,
@@ -334,7 +331,7 @@ mod tests_cfn {
         #[case(
             "cfn-testing.yaml",
             RuleType::CW_001,
-            Some(RuleTypeConfigDetail::Threshold { threshold: (14) }),
+            Some(RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Int(14) }),
             CloudWatchViolation::LogRetentionTooLong,
         )]
         #[case(

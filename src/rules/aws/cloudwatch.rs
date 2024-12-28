@@ -24,7 +24,7 @@ pub fn check_cloudwatch_log_group_retention<L: LineMarker>(
                                 rule_config.rules.get(&RuleType::CW_001)
                             {
                                 if let Some(threshold) =
-                                    log_retention_days.config_detail.get_threshold()
+                                    log_retention_days.config_detail.get_threshold_int()
                                 {
                                     // Check if the retention period is longer than the threshold
                                     if retention.as_u64().is_none_or(|v| v > threshold) {

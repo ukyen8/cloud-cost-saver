@@ -9,6 +9,7 @@ Globals:
       Variables:
         POWERTOOLS_LOG_LEVEL: "ERROR"
         POWERTOOLS_LOGGER_LOG_EVENT: true
+        POWERTOOLS_LOGGER_SAMPLE_RATE: 0.5
 
 Resources:
   MyLambdaFunction:
@@ -23,6 +24,7 @@ Resources:
       Environment:
         Variables:
           POWERTOOLS_LOG_LEVEL: "INFO"
+          POWERTOOLS_LOGGER_SAMPLE_RATE: 1
 
   MyLambdaFunction2:
     Type: AWS::Serverless::Function

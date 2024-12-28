@@ -58,6 +58,7 @@ This section lists the various violations that this tool can detect in AWS Cloud
 | LAMBDA-004 | Asynchronously invoked Lambda functions have a default maximum retry attempts set to 2. Consider setting the maximum retry attempts to 0 to prevent unnecessary retries. For example, if your Lambda function is invoked via an SQS queue with 3 retries, a failure event may result in up to 9 retries. | true |
 | LAMBDA-005 | Set the POWERTOOLS_LOG_LEVEL environment variable to appropriate logging levels for different environments when using AWS Lambda Powertools. This helps in reducing logging costs. | false |
 | LAMBDA-006 | Logging every incoming event may significantly increase cloud costs. Consider disabling POWERTOOLS_LOGGER_LOG_EVENT in the production environment to help reduce logging expenses. | true |
+| LAMBDA-007 | Set the POWERTOOLS_LOGGER_SAMPLE_RATE environment variable to a value between 0 and 1 to sample logs and reduce logging costs when using AWS Lambda Powertools. | false |
 
 #### CloudWatch
 
@@ -118,6 +119,7 @@ The `.cloudsaving.yaml` file allows you to customize the behavior of the Cloud C
 | LAMBDA_004 | Threshold          | Lambda maximum retry attempts |
 | LAMBDA_005 | Value              | POWERTOOLS_LOG_LEVEL value |
 | LAMBDA_006 | Simple             | Enable to check if POWERTOOLS_LOGGER_LOG_EVENT is set to false |
+| LAMBDA_007 | Threshold          | Set sample rate with POWERTOOLS_LOGGER_SAMPLE_RATE |
 | CW_001     | Threshold          | Log retention period in days |
 | CW_002     | Simple             | Enabled or not |
 | CW_003     | Simple             | Enabled or not |
