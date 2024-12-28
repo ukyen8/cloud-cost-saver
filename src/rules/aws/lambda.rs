@@ -192,3 +192,52 @@ pub fn check_lambda_maxmimum_retry_attempts<L: LineMarker>(
         }
     }
 }
+
+pub fn check_lambda_powertools_environment_variables<L: LineMarker>(
+    infra_template: &InfratructureTemplate,
+    rule_config: &RuleConfig,
+    error_reporter: &mut ErrorReporter,
+    line_marker: &L,
+) {
+    if let Some(cloudformation) = &infra_template.cloudformation {
+        if let Some(resources) = &cloudformation.resources {
+            for (key, resource) in resources {
+                if let AWSResourceType::LambdaFunction | AWSResourceType::LambdaServerlessFunction =
+                    &resource.type_
+                {
+                    if let Some(variables) = resource
+                        .properties
+                        .as_ref()
+                        .and_then(|props| props.get("Environment"))
+                        .and_then(|env| env.get("Variables"))
+                    {
+                        if let Some(rule_type) = rule_config.rules.get(&RuleType::LAMBDA_005) {
+                            if let Some(target_log_level) = rule_type.config_detail.get_value() {
+                                if let Some(powertools_log_level) =
+                                    variables.get("POWERTOOLS_LOG_LEVEL")
+                                {
+                                    if Some(target_log_level.as_str())
+                                        != powertools_log_level.as_str()
+                                    {
+                                        error_reporter.add_error(
+                                            Box::new(LambdaViolation::PowertoolsLogLevel),
+                                            key,
+                                            line_marker
+                                                .get_resource_span(vec![
+                                                    key,
+                                                    "Properties",
+                                                    "Environment",
+                                                    "Variables",
+                                                ])
+                                                .copied(),
+                                        );
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

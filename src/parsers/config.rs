@@ -11,6 +11,7 @@ pub struct RuleTypeConfig {
 
 #[derive(Debug, Serialize)]
 pub enum RuleTypeConfigDetail {
+    Value { value: String },
     Values { values: Vec<String> },
     Threshold { threshold: u64 },
     Simple,
@@ -35,6 +36,12 @@ impl<'de> Deserialize<'de> for RuleTypeConfigDetail {
             if let Some(threshold) = threshold.as_u64() {
                 return Ok(RuleTypeConfigDetail::Threshold { threshold });
             }
+        } else if let Some(value) = map.get("value") {
+            if let Some(value) = value.as_str() {
+                return Ok(RuleTypeConfigDetail::Value {
+                    value: value.to_string(),
+                });
+            }
         }
 
         Ok(RuleTypeConfigDetail::Simple)
@@ -42,6 +49,14 @@ impl<'de> Deserialize<'de> for RuleTypeConfigDetail {
 }
 
 impl RuleTypeConfigDetail {
+    pub fn get_value(&self) -> Option<&String> {
+        if let RuleTypeConfigDetail::Value { value } = self {
+            Some(value)
+        } else {
+            None
+        }
+    }
+
     pub fn get_values(&self) -> Option<&Vec<String>> {
         if let RuleTypeConfigDetail::Values { values } = self {
             Some(values)
@@ -66,6 +81,7 @@ pub enum RuleType {
     LAMBDA_002,
     LAMBDA_003,
     LAMBDA_004,
+    LAMBDA_005,
     CW_001,
     CW_002,
     CW_003,
@@ -113,6 +129,15 @@ impl Default for RuleConfig {
             RuleTypeConfig {
                 enabled: true,
                 config_detail: RuleTypeConfigDetail::Threshold { threshold: 0 },
+            },
+        );
+        rules.insert(
+            RuleType::LAMBDA_005,
+            RuleTypeConfig {
+                enabled: true,
+                config_detail: RuleTypeConfigDetail::Value {
+                    value: "INFO".to_string(),
+                },
             },
         );
         rules.insert(

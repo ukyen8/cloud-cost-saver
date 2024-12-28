@@ -61,6 +61,15 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
                 );
             }
 
+            if rule_config.enabled(RuleType::LAMBDA_005) {
+                aws::lambda::check_lambda_powertools_environment_variables(
+                    self.infra_template,
+                    rule_config,
+                    self.error_reporter,
+                    self.line_marker,
+                );
+            }
+
             if rule_config.enabled(RuleType::CW_001) || rule_config.enabled(RuleType::CW_002) {
                 aws::cloudwatch::check_cloudwatch_log_group_retention(
                     self.infra_template,
@@ -265,7 +274,7 @@ mod tests_cfn {
 
         #[rstest]
         #[case(
-            "cfn-lambda-004.yaml",
+            "cfn-lambda-examples.yaml",
             RuleType::LAMBDA_004,
             Some(RuleTypeConfigDetail::Threshold { threshold: 0 }),
             LambdaViolation::MaximumRetryAttempts
@@ -285,6 +294,31 @@ mod tests_cfn {
                 ExpectedViolation::new(&violation, "MyLambdaFunction"),
                 ExpectedViolation::new(&violation, "MyLambdaFunction3"),
             ]);
+            expected.assert_all_match(&context.error_reporter.render_errors());
+        }
+
+        #[rstest]
+        #[case(
+            "cfn-lambda-examples.yaml",
+            RuleType::LAMBDA_005,
+            Some(RuleTypeConfigDetail::Value { value: "ERROR".to_string() }),
+            LambdaViolation::PowertoolsLogLevel
+        )]
+        fn test_lambda_005(
+            #[case] template_name: &str,
+            #[case] rule_type: RuleType,
+            #[case] config_detail: Option<RuleTypeConfigDetail>,
+            #[case] violation: LambdaViolation,
+            setup_checker: impl Fn(&str, RuleType, Option<RuleTypeConfigDetail>) -> TestContext,
+        ) {
+            let mut context = setup_checker(template_name, rule_type, config_detail);
+            let mut checker = context.create_checker();
+            checker.run_checks();
+
+            let expected = ExpectedViolations::new(vec![ExpectedViolation::new(
+                &violation,
+                "MyLambdaFunction",
+            )]);
             expected.assert_all_match(&context.error_reporter.render_errors());
         }
 
