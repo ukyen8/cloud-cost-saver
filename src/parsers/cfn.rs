@@ -447,7 +447,7 @@ mod test {
         );
         assert_eq!(cloudformation.parameters.unwrap().len(), 4);
         assert_eq!(cloudformation.mappings.unwrap().len(), 1);
-        assert_eq!(cloudformation.globals.unwrap().function.unwrap().len(), 2);
+        assert_eq!(cloudformation.globals.unwrap().function.unwrap().len(), 4);
         assert_eq!(cloudformation.resources.unwrap().len(), 1);
         assert_eq!(cloudformation.outputs.unwrap().len(), 1);
     }
