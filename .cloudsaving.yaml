@@ -9,6 +9,12 @@ cloudformation:
       values:
         - tag1
         - tag2
+    LAMBDA_004:
+      enabled: true
+      threshold: 0
+    LAMBDA_005:
+      enabled: true
+      value: "ERROR"
     CW_001:
       enabled: true
       threshold: 14
