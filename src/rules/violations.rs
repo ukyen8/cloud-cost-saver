@@ -12,6 +12,7 @@ pub enum LambdaViolation {
     ARMArchitecture,
     MissingTag,
     MaximumRetryAttempts,
+    PowertoolsLogLevel,
 }
 
 impl Violation for LambdaViolation {
@@ -34,6 +35,11 @@ impl Violation for LambdaViolation {
                 Consider setting the maximum retry attempts to 0 to prevent unnecessary retries. \
                 For example, if your Lambda function is invoked via an SQS queue with 3 retries, \
                 a failure event may result in up to 9 retries.".to_string()
+            },
+            LambdaViolation::PowertoolsLogLevel => {
+                "Set the POWERTOOLS_LOG_LEVEL environment variable to appropriate logging levels \
+                for different environments when using AWS Lambda Powertools. \
+                This helps in reducing logging costs.".to_string()
             }
         }
     }
@@ -44,6 +50,7 @@ impl Violation for LambdaViolation {
             LambdaViolation::ARMArchitecture => "LAMBDA-002".to_string(),
             LambdaViolation::MissingTag => "LAMBDA-003".to_string(),
             LambdaViolation::MaximumRetryAttempts => "LAMBDA-004".to_string(),
+            LambdaViolation::PowertoolsLogLevel => "LAMBDA-005".to_string(),
         }
     }
 }

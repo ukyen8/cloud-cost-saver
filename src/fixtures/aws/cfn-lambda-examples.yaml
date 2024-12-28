@@ -5,6 +5,9 @@ Globals:
   Function:
     EventInvokeConfig:
       MaximumRetryAttempts: 2
+    Environment:
+      Variables:
+        POWERTOOLS_LOG_LEVEL: "ERROR"
 
 Resources:
   MyLambdaFunction:
@@ -16,6 +19,9 @@ Resources:
         S3Bucket: "lambda-functions"
         S3Key: "function.zip"
       Role: "arn:aws:iam::123456789012:role/execution_role"
+      Environment:
+        Variables:
+          POWERTOOLS_LOG_LEVEL: "INFO"
 
   MyLambdaFunction2:
     Type: AWS::Serverless::Function
