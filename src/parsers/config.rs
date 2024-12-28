@@ -9,11 +9,17 @@ pub struct RuleTypeConfig {
     pub config_detail: RuleTypeConfigDetail,
 }
 
+#[derive(Debug, Serialize, Clone)]
+pub enum ThresholdValue {
+    Int(u64),
+    Float(f64),
+}
+
 #[derive(Debug, Serialize)]
 pub enum RuleTypeConfigDetail {
     Value { value: String },
     Values { values: Vec<String> },
-    Threshold { threshold: u64 },
+    Threshold { threshold: ThresholdValue },
     Simple,
 }
 
@@ -34,7 +40,13 @@ impl<'de> Deserialize<'de> for RuleTypeConfigDetail {
             }
         } else if let Some(threshold) = map.get("threshold") {
             if let Some(threshold) = threshold.as_u64() {
-                return Ok(RuleTypeConfigDetail::Threshold { threshold });
+                return Ok(RuleTypeConfigDetail::Threshold {
+                    threshold: ThresholdValue::Int(threshold),
+                });
+            } else if let Some(threshold) = threshold.as_f64() {
+                return Ok(RuleTypeConfigDetail::Threshold {
+                    threshold: ThresholdValue::Float(threshold),
+                });
             }
         } else if let Some(value) = map.get("value") {
             if let Some(value) = value.as_str() {
@@ -65,12 +77,22 @@ impl RuleTypeConfigDetail {
         }
     }
 
-    pub fn get_threshold(&self) -> Option<u64> {
+    pub fn get_threshold_int(&self) -> Option<u64> {
         if let RuleTypeConfigDetail::Threshold { threshold } = self {
-            Some(*threshold)
-        } else {
-            None
+            if let ThresholdValue::Int(value) = threshold {
+                return Some(*value);
+            }
         }
+        None
+    }
+
+    pub fn get_threshold_float(&self) -> Option<f64> {
+        if let RuleTypeConfigDetail::Threshold { threshold } = self {
+            if let ThresholdValue::Float(value) = threshold {
+                return Some(*value);
+            }
+        }
+        None
     }
 }
 
@@ -83,6 +105,7 @@ pub enum RuleType {
     LAMBDA_004,
     LAMBDA_005,
     LAMBDA_006,
+    LAMBDA_007,
     CW_001,
     CW_002,
     CW_003,
@@ -129,7 +152,9 @@ impl Default for RuleConfig {
             RuleType::LAMBDA_004,
             RuleTypeConfig {
                 enabled: true,
-                config_detail: RuleTypeConfigDetail::Threshold { threshold: 0 },
+                config_detail: RuleTypeConfigDetail::Threshold {
+                    threshold: ThresholdValue::Int(0),
+                },
             },
         );
         rules.insert(
@@ -149,10 +174,21 @@ impl Default for RuleConfig {
             },
         );
         rules.insert(
+            RuleType::LAMBDA_007,
+            RuleTypeConfig {
+                enabled: false,
+                config_detail: RuleTypeConfigDetail::Threshold {
+                    threshold: ThresholdValue::Float(0.01),
+                },
+            },
+        );
+        rules.insert(
             RuleType::CW_001,
             RuleTypeConfig {
                 enabled: true,
-                config_detail: RuleTypeConfigDetail::Threshold { threshold: 30 },
+                config_detail: RuleTypeConfigDetail::Threshold {
+                    threshold: ThresholdValue::Int(30),
+                },
             },
         );
         rules.insert(
@@ -229,7 +265,7 @@ mod tests {
         assert_eq!(
             cw_log_retention_policy
                 .config_detail
-                .get_threshold()
+                .get_threshold_int()
                 .unwrap(),
             30
         );
@@ -255,7 +291,7 @@ mod tests {
         assert_eq!(
             cw_log_retention_policy
                 .config_detail
-                .get_threshold()
+                .get_threshold_int()
                 .unwrap(),
             14
         );

@@ -14,6 +14,7 @@ pub enum LambdaViolation {
     MaximumRetryAttempts,
     PowertoolsLogLevel,
     PowertoolsLoggerLogEvent,
+    PowertoolsLoggerSampleRate,
 }
 
 impl Violation for LambdaViolation {
@@ -45,6 +46,10 @@ impl Violation for LambdaViolation {
             LambdaViolation::PowertoolsLoggerLogEvent => {
                 "Logging every incoming event may significantly increase cloud costs. \
                 Consider disabling POWERTOOLS_LOGGER_LOG_EVENT in the production environment to help reduce logging expenses.".to_string()
+            },
+            LambdaViolation::PowertoolsLoggerSampleRate => {
+                "Set the POWERTOOLS_LOGGER_SAMPLE_RATE environment variable to a value between 0 and 1 \
+                to sample logs and reduce logging costs when using AWS Lambda Powertools.".to_string()
             }
         }
     }
@@ -57,6 +62,7 @@ impl Violation for LambdaViolation {
             LambdaViolation::MaximumRetryAttempts => "LAMBDA-004".to_string(),
             LambdaViolation::PowertoolsLogLevel => "LAMBDA-005".to_string(),
             LambdaViolation::PowertoolsLoggerLogEvent => "LAMBDA-006".to_string(),
+            LambdaViolation::PowertoolsLoggerSampleRate => "LAMBDA-007".to_string(),
         }
     }
 }

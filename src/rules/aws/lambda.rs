@@ -154,7 +154,7 @@ pub fn check_lambda_maxmimum_retry_attempts<L: LineMarker>(
         let max_retry_attempts_config = rule_config
             .rules
             .get(&RuleType::LAMBDA_004)
-            .and_then(|rule_type| rule_type.config_detail.get_threshold())
+            .and_then(|rule_type| rule_type.config_detail.get_threshold_int())
             .unwrap_or(0);
 
         if let Some(resources) = &cloudformation.resources {
@@ -212,15 +212,41 @@ pub fn check_lambda_powertools_environment_variables<L: LineMarker>(
                         .and_then(|env| env.get("Variables"))
                     {
                         if let Some(rule_type) = rule_config.rules.get(&RuleType::LAMBDA_005) {
-                            if let Some(target_log_level) = rule_type.config_detail.get_value() {
-                                if let Some(powertools_log_level) =
-                                    variables.get("POWERTOOLS_LOG_LEVEL")
+                            if rule_type.enabled {
+                                if let Some(target_log_level) = rule_type.config_detail.get_value()
                                 {
-                                    if Some(target_log_level.as_str())
-                                        != powertools_log_level.as_str()
+                                    if let Some(powertools_log_level) =
+                                        variables.get("POWERTOOLS_LOG_LEVEL")
                                     {
+                                        if Some(target_log_level.as_str())
+                                            != powertools_log_level.as_str()
+                                        {
+                                            error_reporter.add_error(
+                                                Box::new(LambdaViolation::PowertoolsLogLevel),
+                                                key,
+                                                line_marker
+                                                    .get_resource_span(vec![
+                                                        key,
+                                                        "Properties",
+                                                        "Environment",
+                                                        "Variables",
+                                                    ])
+                                                    .copied(),
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if let Some(rule_type) = rule_config.rules.get(&RuleType::LAMBDA_006) {
+                            if rule_type.enabled {
+                                if let Some(powertools_logger_log_event) =
+                                    variables.get("POWERTOOLS_LOGGER_LOG_EVENT")
+                                {
+                                    if powertools_logger_log_event.as_bool().unwrap_or(false) {
                                         error_reporter.add_error(
-                                            Box::new(LambdaViolation::PowertoolsLogLevel),
+                                            Box::new(LambdaViolation::PowertoolsLoggerLogEvent),
                                             key,
                                             line_marker
                                                 .get_resource_span(vec![
@@ -236,23 +262,36 @@ pub fn check_lambda_powertools_environment_variables<L: LineMarker>(
                             }
                         }
 
-                        if rule_config.rules.contains_key(&RuleType::LAMBDA_006) {
-                            if let Some(powertools_logger_log_event) =
-                                variables.get("POWERTOOLS_LOGGER_LOG_EVENT")
-                            {
-                                if powertools_logger_log_event.as_bool().unwrap_or(false) {
-                                    error_reporter.add_error(
-                                        Box::new(LambdaViolation::PowertoolsLoggerLogEvent),
-                                        key,
-                                        line_marker
-                                            .get_resource_span(vec![
-                                                key,
-                                                "Properties",
-                                                "Environment",
-                                                "Variables",
-                                            ])
-                                            .copied(),
-                                    );
+                        if let Some(rule_type) = rule_config.rules.get(&RuleType::LAMBDA_007) {
+                            if rule_type.enabled {
+                                // Fetch threshold from the rule configuration
+                                dbg!(&rule_config.rules);
+                                let powertools_logger_sample_rate_config = rule_config
+                                    .rules
+                                    .get(&RuleType::LAMBDA_007)
+                                    .and_then(|rule_type| {
+                                        rule_type.config_detail.get_threshold_float()
+                                    })
+                                    .unwrap_or(1.0);
+                                if let Some(powertools_logger_sample_rate) =
+                                    variables.get("POWERTOOLS_LOGGER_SAMPLE_RATE")
+                                {
+                                    if powertools_logger_sample_rate
+                                        != powertools_logger_sample_rate_config
+                                    {
+                                        error_reporter.add_error(
+                                            Box::new(LambdaViolation::PowertoolsLoggerSampleRate),
+                                            key,
+                                            line_marker
+                                                .get_resource_span(vec![
+                                                    key,
+                                                    "Properties",
+                                                    "Environment",
+                                                    "Variables",
+                                                ])
+                                                .copied(),
+                                        );
+                                    }
                                 }
                             }
                         }
