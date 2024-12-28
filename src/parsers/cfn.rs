@@ -29,7 +29,6 @@ impl CloudFormation {
                 .environments
                 .get(environment.expect("Environment is None"))
                 .expect("Environment not found in samconfig");
-
             // Check if the parameter is overridden in the samconfig
             if let Some(sam_deploy_parameters) = samconfig_section.deploy.as_ref() {
                 if let Some(parameters) = self.parameters.as_mut() {
@@ -44,7 +43,9 @@ impl CloudFormation {
                                     .parameter_overrides
                                     .as_ref()
                                     .and_then(|s| s.get(k))
-                                    .map(|s| serde_yaml::Value::String(s.clone()));
+                                    .map(|s| {
+                                        serde_yaml::Value::String(s.to_string().replace("\"", ""))
+                                    });
                             }
                         }
                     }
@@ -144,7 +145,6 @@ impl CloudFormation {
                 }
             }
         }
-
         // Apply Globals to Resources' properties
         if let Some(resources) = self.resources.as_mut() {
             for (_, resource) in resources {

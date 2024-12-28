@@ -8,6 +8,7 @@ Globals:
     Environment:
       Variables:
         POWERTOOLS_LOG_LEVEL: "ERROR"
+        POWERTOOLS_LOGGER_LOG_EVENT: true
 
 Resources:
   MyLambdaFunction:
@@ -34,6 +35,9 @@ Resources:
       Role: "arn:aws:iam::123456789012:role/execution_role"
       EventInvokeConfig:
         MaximumRetryAttempts: 0
+      Environment:
+        Variables:
+          POWERTOOLS_LOGGER_LOG_EVENT: false
   
   MyLambdaFunction3:
     Type: AWS::Serverless::Function
@@ -46,3 +50,6 @@ Resources:
       Role: "arn:aws:iam::123456789012:role/execution_role"
       EventInvokeConfig:
         MaximumRetryAttempts: 1
+      Environment:
+        Variables:
+          POWERTOOLS_LOGGER_LOG_EVENT: false

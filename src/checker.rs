@@ -61,7 +61,9 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
                 );
             }
 
-            if rule_config.enabled(RuleType::LAMBDA_005) {
+            if rule_config.enabled(RuleType::LAMBDA_005)
+                || rule_config.enabled(RuleType::LAMBDA_006)
+            {
                 aws::lambda::check_lambda_powertools_environment_variables(
                     self.infra_template,
                     rule_config,
@@ -304,7 +306,13 @@ mod tests_cfn {
             Some(RuleTypeConfigDetail::Value { value: "ERROR".to_string() }),
             LambdaViolation::PowertoolsLogLevel
         )]
-        fn test_lambda_005(
+        #[case(
+            "cfn-lambda-examples.yaml",
+            RuleType::LAMBDA_006,
+            None,
+            LambdaViolation::PowertoolsLoggerLogEvent
+        )]
+        fn test_lambda_005_006(
             #[case] template_name: &str,
             #[case] rule_type: RuleType,
             #[case] config_detail: Option<RuleTypeConfigDetail>,

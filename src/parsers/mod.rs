@@ -2,6 +2,7 @@ pub(crate) mod cfn;
 pub(crate) mod config;
 pub(crate) mod iac;
 use marked_yaml::{parse_yaml, Node, Span};
+use regex::Regex;
 use std::fs;
 
 pub trait LineMarker {
@@ -33,11 +34,15 @@ pub(crate) fn get_yaml_line_marker(template: &str) -> Result<YamlLineMarker, std
     let node = parse_yaml(0, &preprocessed_doc).expect("Failed to parse YAML");
     Ok(YamlLineMarker::new(node))
 }
+
 fn preprocess_yaml(doc: &str) -> String {
     let mut lines: Vec<String> = Vec::new();
+    let re = Regex::new(r"Fn::\w+:").unwrap();
     for line in doc.lines() {
         // Replace `!` with `###` to avoid parsing issues with `!` in the YAML
-        let cleaned_line = line.replace("!", "###");
+        let mut cleaned_line = line.replace("!", "###");
+        // Replace `Fn::xxx:` with another string to avoid parsing issues with `Fn::xxx:`
+        cleaned_line = re.replace_all(&cleaned_line, "###REPLACED").to_string();
         lines.push(cleaned_line);
     }
     lines.join("\n")
