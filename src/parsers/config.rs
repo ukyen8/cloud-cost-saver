@@ -78,19 +78,21 @@ impl RuleTypeConfigDetail {
     }
 
     pub fn get_threshold_int(&self) -> Option<u64> {
-        if let RuleTypeConfigDetail::Threshold { threshold } = self {
-            if let ThresholdValue::Int(value) = threshold {
-                return Some(*value);
-            }
+        if let RuleTypeConfigDetail::Threshold {
+            threshold: ThresholdValue::Int(value),
+        } = self
+        {
+            return Some(*value);
         }
         None
     }
 
     pub fn get_threshold_float(&self) -> Option<f64> {
-        if let RuleTypeConfigDetail::Threshold { threshold } = self {
-            if let ThresholdValue::Float(value) = threshold {
-                return Some(*value);
-            }
+        if let RuleTypeConfigDetail::Threshold {
+            threshold: ThresholdValue::Float(value),
+        } = self
+        {
+            return Some(*value);
         }
         None
     }
