@@ -213,7 +213,7 @@ pub fn check_lambda_powertools_environment_variables<L: LineMarker>(
                         .and_then(|env| env.get("Variables"))
                     {
                         if let Some(rule_type) =
-                            rule_config.get_rule(RuleType::LAMBDA_005, &environment)
+                            rule_config.get_rule(RuleType::LAMBDA_005, environment)
                         {
                             if rule_type.enabled {
                                 if let Some(target_log_level) = rule_type.config_detail.get_value()
@@ -243,7 +243,7 @@ pub fn check_lambda_powertools_environment_variables<L: LineMarker>(
                         }
 
                         if let Some(rule_type) =
-                            rule_config.get_rule(RuleType::LAMBDA_006, &environment)
+                            rule_config.get_rule(RuleType::LAMBDA_006, environment)
                         {
                             if rule_type.enabled {
                                 if let Some(powertools_logger_log_event) =
@@ -268,7 +268,7 @@ pub fn check_lambda_powertools_environment_variables<L: LineMarker>(
                         }
 
                         if let Some(rule_type) =
-                            rule_config.get_rule(RuleType::LAMBDA_007, &environment)
+                            rule_config.get_rule(RuleType::LAMBDA_007, environment)
                         {
                             if rule_type.enabled {
                                 // Fetch threshold from the rule configuration

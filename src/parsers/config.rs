@@ -248,8 +248,8 @@ impl Default for RuleConfig {
         environments.insert("default".to_string(), Some(rules.clone()));
 
         RuleConfig {
-            rules: rules,
-            environments: environments,
+            rules,
+            environments,
         }
     }
 }
@@ -290,7 +290,7 @@ impl Config {
                 .environments
                 .entry("default".to_string())
                 .or_insert_with(|| Some(cloudformation.rules.clone()));
-            for (_env, rules) in &mut cloudformation.environments {
+            for rules in cloudformation.environments.values_mut() {
                 // No override rules, apply default rules
                 if rules.is_none() {
                     rules.replace(cloudformation.rules.clone());
@@ -390,7 +390,7 @@ mod tests {
             .as_ref()
             .unwrap();
         let prod_cw002 = prod_env.get(&RuleType::CW_002).unwrap();
-        assert_eq!(prod_cw002.enabled, false);
+        assert!(!prod_cw002.enabled);
         let prod_lamnda003 = prod_env.get(&RuleType::LAMBDA_003).unwrap();
         assert_eq!(
             prod_lamnda003.config_detail.get_values().unwrap(),
