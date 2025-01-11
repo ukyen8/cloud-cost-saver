@@ -16,3 +16,18 @@ cloudformation:
       enabled: true
     CW_003:
       enabled: false
+  environments:
+    dev:
+    sandbox:
+      LAMBDA_002:
+        enabled: false
+      CW_003:
+        enabled: true
+    prod:
+      LAMBDA_003:
+        enabled: true
+        values:
+          - tag3
+          - tag4
+      CW_002:
+        enabled: false

@@ -19,8 +19,8 @@ struct Args {
     #[arg(short, long)]
     template: String,
 
-    #[arg(short, long)]
-    environment: Option<String>,
+    #[arg(short, long, default_value = "default")]
+    environment: String,
 
     #[arg(short, long)]
     samconfig: Option<String>,
@@ -44,9 +44,9 @@ fn main() -> ExitCode {
             parse_cloudformation(&template_file).expect("Failed to parse CloudFormation template");
         if let Some(samconfig) = args.samconfig.as_deref() {
             let samconfig = parse_samconfig(samconfig).expect("Failed to parse samconfig");
-            parsed_cfn.resolve_parameters(Some(&samconfig), environment.as_deref());
+            parsed_cfn.resolve_parameters(Some(&samconfig), environment.as_str());
         } else {
-            parsed_cfn.resolve_parameters(None, environment.as_deref());
+            parsed_cfn.resolve_parameters(None, environment.as_str());
         }
         let infra_template = InfratructureTemplate {
             cloudformation: Some(parsed_cfn),
@@ -54,7 +54,13 @@ fn main() -> ExitCode {
 
         let line_marker =
             parsers::get_yaml_line_marker(&template_file).expect("Failed to get YAML line marker");
-        let mut checker = Checker::new(&config, &mut error_reporter, &infra_template, &line_marker);
+        let mut checker = Checker::new(
+            &config,
+            &mut error_reporter,
+            &infra_template,
+            &line_marker,
+            &environment,
+        );
         checker.run_checks();
         if error_reporter.has_errors() {
             eprintln!("{}", error_reporter.render_errors());

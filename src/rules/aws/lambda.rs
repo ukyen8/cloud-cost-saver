@@ -198,6 +198,7 @@ pub fn check_lambda_powertools_environment_variables<L: LineMarker>(
     rule_config: &RuleConfig,
     error_reporter: &mut ErrorReporter,
     line_marker: &L,
+    environment: &str,
 ) {
     if let Some(cloudformation) = &infra_template.cloudformation {
         if let Some(resources) = &cloudformation.resources {
@@ -211,7 +212,9 @@ pub fn check_lambda_powertools_environment_variables<L: LineMarker>(
                         .and_then(|props| props.get("Environment"))
                         .and_then(|env| env.get("Variables"))
                     {
-                        if let Some(rule_type) = rule_config.rules.get(&RuleType::LAMBDA_005) {
+                        if let Some(rule_type) =
+                            rule_config.get_rule(RuleType::LAMBDA_005, &environment)
+                        {
                             if rule_type.enabled {
                                 if let Some(target_log_level) = rule_type.config_detail.get_value()
                                 {
@@ -239,7 +242,9 @@ pub fn check_lambda_powertools_environment_variables<L: LineMarker>(
                             }
                         }
 
-                        if let Some(rule_type) = rule_config.rules.get(&RuleType::LAMBDA_006) {
+                        if let Some(rule_type) =
+                            rule_config.get_rule(RuleType::LAMBDA_006, &environment)
+                        {
                             if rule_type.enabled {
                                 if let Some(powertools_logger_log_event) =
                                     variables.get("POWERTOOLS_LOGGER_LOG_EVENT")
@@ -262,10 +267,11 @@ pub fn check_lambda_powertools_environment_variables<L: LineMarker>(
                             }
                         }
 
-                        if let Some(rule_type) = rule_config.rules.get(&RuleType::LAMBDA_007) {
+                        if let Some(rule_type) =
+                            rule_config.get_rule(RuleType::LAMBDA_007, &environment)
+                        {
                             if rule_type.enabled {
                                 // Fetch threshold from the rule configuration
-                                dbg!(&rule_config.rules);
                                 let powertools_logger_sample_rate_config = rule_config
                                     .rules
                                     .get(&RuleType::LAMBDA_007)
