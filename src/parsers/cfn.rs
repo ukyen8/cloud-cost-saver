@@ -23,11 +23,11 @@ pub(crate) struct CloudFormation {
 }
 
 impl CloudFormation {
-    pub fn resolve_parameters(&mut self, samconfig: Option<&SamConfig>, environment: Option<&str>) {
+    pub fn resolve_parameters(&mut self, samconfig: Option<&SamConfig>, environment: &str) {
         if let Some(samconfig) = samconfig {
             let samconfig_section = samconfig
                 .environments
-                .get(environment.expect("Environment is None"))
+                .get(environment)
                 .expect("Environment not found in samconfig");
             // Check if the parameter is overridden in the samconfig
             if let Some(sam_deploy_parameters) = samconfig_section.deploy.as_ref() {
@@ -457,7 +457,7 @@ mod test {
         let mut cloudformation =
             parse_cloudformation("src/fixtures/aws/cfn-parsing-test.yaml").unwrap();
         let samconfig = parse_samconfig("src/fixtures/aws/samconfig.toml").unwrap();
-        cloudformation.resolve_parameters(Some(&samconfig), Some("default"));
+        cloudformation.resolve_parameters(Some(&samconfig), "default");
         let parameters = cloudformation.parameters.unwrap();
         let database_name = parameters.get("DatabaseName").unwrap();
         assert_eq!(

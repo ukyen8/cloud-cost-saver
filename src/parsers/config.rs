@@ -1,21 +1,22 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
+use std::hash::Hash;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct RuleTypeConfig {
     pub enabled: bool,
     #[serde(flatten)]
     pub config_detail: RuleTypeConfigDetail,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub enum ThresholdValue {
     Int(u64),
     Float(f64),
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub enum RuleTypeConfigDetail {
     Value { value: String },
     Values { values: Vec<String> },
@@ -98,7 +99,7 @@ impl RuleTypeConfigDetail {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
 #[allow(non_camel_case_types)]
 pub enum RuleType {
     LAMBDA_001,
@@ -116,11 +117,27 @@ pub enum RuleType {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RuleConfig {
     pub rules: HashMap<RuleType, RuleTypeConfig>,
+    pub environments: HashMap<String, Option<HashMap<RuleType, RuleTypeConfig>>>,
 }
 
 impl RuleConfig {
-    pub fn enabled(&self, violation: RuleType) -> bool {
-        self.rules.get(&violation).is_some_and(|rule| rule.enabled)
+    pub fn enabled(&self, violation: RuleType, environment: &str) -> bool {
+        if let Some(rule) = self
+            .environments
+            .get(environment)
+            .and_then(|env| env.as_ref())
+            .and_then(|rules| rules.get(&violation))
+        {
+            return rule.enabled;
+        }
+        false
+    }
+
+    pub fn get_rule(&self, rule: RuleType, environment: &str) -> Option<&RuleTypeConfig> {
+        self.environments
+            .get(environment)
+            .and_then(|rules| rules.as_ref())
+            .and_then(|rules| rules.get(&rule))
     }
 }
 
@@ -207,8 +224,13 @@ impl Default for RuleConfig {
                 config_detail: RuleTypeConfigDetail::Simple,
             },
         );
+        let mut environments = HashMap::new();
+        environments.insert("default".to_string(), Some(rules.clone()));
 
-        RuleConfig { rules }
+        RuleConfig {
+            rules,
+            environments,
+        }
     }
 }
 
@@ -232,13 +254,36 @@ impl Config {
         let mut config: Config = serde_yaml::from_str(&data)?;
 
         // Merge default rules with the loaded configuration
-        let default_rules = RuleConfig::default().rules;
+        let default_rules: HashMap<RuleType, RuleTypeConfig> = RuleConfig::default().rules;
         if let Some(ref mut cloudformation) = config.cloudformation {
             for (rule_name, default_rule) in default_rules {
                 cloudformation
                     .rules
                     .entry(rule_name)
                     .or_insert(default_rule);
+            }
+        }
+
+        if let Some(ref mut cloudformation) = config.cloudformation {
+            // Create `default` environment
+            cloudformation
+                .environments
+                .entry("default".to_string())
+                .or_insert_with(|| Some(cloudformation.rules.clone()));
+            for rules in cloudformation.environments.values_mut() {
+                // No override rules, apply default rules
+                if rules.is_none() {
+                    rules.replace(cloudformation.rules.clone());
+                } else {
+                    // Merge default rules with the loaded configuration
+                    if let Some(rules) = rules {
+                        for (rule_name, default_rule) in &cloudformation.rules.clone() {
+                            rules
+                                .entry(rule_name.clone())
+                                .or_insert_with(|| default_rule.clone());
+                        }
+                    }
+                }
             }
         }
 
@@ -257,11 +302,11 @@ mod tests {
         assert!(config.cloudformation.is_some());
         let cloudformation = config.cloudformation.unwrap();
 
-        assert!(!cloudformation.enabled(RuleType::LAMBDA_003));
-        assert!(!cloudformation.enabled(RuleType::LAMBDA_002));
-        assert!(cloudformation.enabled(RuleType::LAMBDA_001));
-        assert!(cloudformation.enabled(RuleType::CW_001));
-        assert!(!cloudformation.enabled(RuleType::CW_003));
+        assert!(!cloudformation.enabled(RuleType::LAMBDA_003, "default"));
+        assert!(!cloudformation.enabled(RuleType::LAMBDA_002, "default"));
+        assert!(cloudformation.enabled(RuleType::LAMBDA_001, "default"));
+        assert!(cloudformation.enabled(RuleType::CW_001, "default"));
+        assert!(!cloudformation.enabled(RuleType::CW_003, "default"));
 
         let cw_log_retention_policy = cloudformation.rules.get(&RuleType::CW_001).unwrap();
         assert_eq!(
@@ -297,6 +342,38 @@ mod tests {
                 .unwrap(),
             14
         );
+
+        dbg!(&cloudformation.environments);
+        let default_env = cloudformation
+            .environments
+            .get("default")
+            .unwrap()
+            .as_ref()
+            .unwrap();
+        assert_eq!(default_env.len(), cloudformation.rules.len());
+
+        // No override rules, apply default rules
+        let dev_env = cloudformation
+            .environments
+            .get("dev")
+            .unwrap()
+            .as_ref()
+            .unwrap();
+        assert!(dev_env.iter().all(|(k, v)| default_env.get(k) == Some(v)));
+
+        let prod_env = cloudformation
+            .environments
+            .get("prod")
+            .unwrap()
+            .as_ref()
+            .unwrap();
+        let prod_cw002 = prod_env.get(&RuleType::CW_002).unwrap();
+        assert!(!prod_cw002.enabled);
+        let prod_lamnda003 = prod_env.get(&RuleType::LAMBDA_003).unwrap();
+        assert_eq!(
+            prod_lamnda003.config_detail.get_values().unwrap(),
+            &vec!["tag3".to_string(), "tag4".to_string()]
+        );
     }
 
     #[test]
@@ -310,5 +387,15 @@ mod tests {
         "#;
 
         let _: Config = from_str(yaml).unwrap();
+    }
+
+    #[test]
+    fn test_default_environment() {
+        let config = Config::default();
+        let cloudformation = config.cloudformation.unwrap();
+
+        // Test with default environment
+        assert!(cloudformation.enabled(RuleType::LAMBDA_001, "default"));
+        assert!(!cloudformation.enabled(RuleType::LAMBDA_003, "default"));
     }
 }
