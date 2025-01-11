@@ -122,42 +122,22 @@ pub struct RuleConfig {
 
 impl RuleConfig {
     pub fn enabled(&self, violation: RuleType, environment: &str) -> bool {
-        if let Some(env) = self.environments.get(environment) {
-            if let Some(rules) = env {
-                if let Some(rule) = rules.get(&violation) {
-                    return rule.enabled;
-                }
-            }
+        if let Some(rule) = self
+            .environments
+            .get(environment)
+            .and_then(|env| env.as_ref())
+            .and_then(|rules| rules.get(&violation))
+        {
+            return rule.enabled;
         }
         false
     }
 
-    pub fn set_rule(
-        &mut self,
-        rule: RuleType,
-        enabled: bool,
-        environment: &str,
-        config_detail: Option<&RuleTypeConfigDetail>,
-    ) {
-        if let Some(env) = self.environments.get_mut(environment) {
-            if let Some(rules) = env {
-                if let Some(rule) = rules.get_mut(&rule) {
-                    rule.enabled = enabled;
-                    if config_detail.is_some() {
-                        rule.config_detail = config_detail.cloned().unwrap();
-                    }
-                }
-            }
-        }
-    }
-
     pub fn get_rule(&self, rule: RuleType, environment: &str) -> Option<&RuleTypeConfig> {
-        if let Some(env) = self.environments.get(environment) {
-            if let Some(rules) = env {
-                return rules.get(&rule);
-            }
-        }
-        None
+        self.environments
+            .get(environment)
+            .and_then(|rules| rules.as_ref())
+            .and_then(|rules| rules.get(&rule))
     }
 }
 
@@ -379,9 +359,7 @@ mod tests {
             .unwrap()
             .as_ref()
             .unwrap();
-        assert!(dev_env
-            .iter()
-            .all(|(k, v)| default_env.get(k).map_or(false, |dv| dv == v)));
+        assert!(dev_env.iter().all(|(k, v)| default_env.get(k) == Some(v)));
 
         let prod_env = cloudformation
             .environments

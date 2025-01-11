@@ -198,7 +198,14 @@ mod tests_cfn {
             config_detail: Option<RuleTypeConfigDetail>,
         ) {
             if let Some(cloudformation) = &mut config.cloudformation {
-                cloudformation.set_rule(rule_type, true, "default", config_detail.as_ref());
+                if let Some(Some(env)) = cloudformation.environments.get_mut("default") {
+                    if let Some(rule) = env.get_mut(&rule_type) {
+                        rule.enabled = true;
+                        if let Some(config_detail) = config_detail {
+                            rule.config_detail = config_detail.clone();
+                        }
+                    }
+                }
             }
         }
 
