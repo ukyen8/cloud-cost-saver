@@ -99,6 +99,21 @@ cloudformation:
             enabled: true
         CW_003:
             enabled: false
+    environments:
+        dev:
+        sandbox:
+            LAMBDA_002:
+                enabled: false
+            CW_003:
+                enabled: true
+        prod:
+            LAMBDA_003:
+                enabled: true
+                values:
+                    - tag3
+                    - tag4
+            CW_002:
+                enabled: false
 ```
 
 In this configuration:
@@ -106,6 +121,9 @@ In this configuration:
 - `CW_001` is enabled with a threshold of 14 days for log retention.
 - `CW_002` is enabled to ensure log groups have a retention policy.
 - `CW_003` is disabled, meaning it will not check for the use of the `INFREQUENT_ACCESS` class for log groups.
+- Environments `dev`, `sandbox`, and `prod` are defined with specific rule configurations.
+
+A `default` environment will be automatically created. The rules defined under environments will override the default rules.
 
 ### Rules configuration table
 
