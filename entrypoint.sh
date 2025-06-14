@@ -8,10 +8,11 @@ SAMCONFIG="/action/$3"
 CONFIG="/action/$4"
 CLOUD_PROVIDER="$5"
 
-ARGS="--template \"$TEMPLATE\" --environment \"$ENVIRONMENT\" --config \"$CONFIG\""
+# Build ARGS without extra quotes
+ARGS="--template $TEMPLATE --environment $ENVIRONMENT --config $CONFIG"
 
 if [ -n "$SAMCONFIG" ]; then
-  ARGS="$ARGS --samconfig \"$SAMCONFIG\""
+  ARGS="$ARGS --samconfig $SAMCONFIG"
 fi
 
 echo "Listing files in /action/src/fixtures:"
