@@ -26,7 +26,8 @@ for f in "$TEMPLATE" "$SAMCONFIG" "$CONFIG"; do
     exit 1
   fi
 done
-
+echo "Contents of config file ($CONFIG):"
+cat "$CONFIG" || echo "Could not read $CONFIG"
 # Execute the Rust binary with the constructed arguments and cloud provider
 echo "Running: /action/target/release/ccs $ARGS \"$CLOUD_PROVIDER\""
 exec /action/target/release/ccs $ARGS "$CLOUD_PROVIDER"
