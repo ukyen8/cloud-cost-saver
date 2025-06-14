@@ -1,7 +1,7 @@
 FROM rust:latest
 
 # Create a new directory for the action
-WORKDIR /action
+WORKDIR /
 
 # Copy the entire project into the container
 COPY . .

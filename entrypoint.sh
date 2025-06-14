@@ -2,10 +2,10 @@
 set -e
 
 # Positional arguments from action.yml
-TEMPLATE="/action/$1"
+TEMPLATE="$1"
 ENVIRONMENT="$2"
-SAMCONFIG="/action/$3"
-CONFIG="/action/$4"
+SAMCONFIG="$3"
+CONFIG="$4"
 CLOUD_PROVIDER="$5"
 
 # Build ARGS without extra quotes
@@ -17,5 +17,5 @@ fi
 
 
 # Execute the Rust binary with the constructed arguments and cloud provider
-echo "Running: /action/target/release/ccs $ARGS \"$CLOUD_PROVIDER\""
-exec /action/target/release/ccs $ARGS "$CLOUD_PROVIDER"
+echo "Running: /target/release/ccs $ARGS \"$CLOUD_PROVIDER\""
+exec /target/release/ccs $ARGS "$CLOUD_PROVIDER"
