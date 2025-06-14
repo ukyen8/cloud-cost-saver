@@ -1,0 +1,406 @@
+AlesterWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: SAM template for the Universal Tracker Store Service
+
+Globals:
+  Function:
+    Timeout: 60
+    Runtime: python3.11
+    MemorySize: 256
+    Architectures:
+      - arm64
+    Layers:
+      - !Ref TrackerApiDependenciesLayer
+      - !Sub arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPythonV3-python311-arm64:4
+    Tracing: Active
+    AutoPublishAlias: live
+    VpcConfig:
+      SecurityGroupIds:
+        - !Ref TrackerApiSecurityGroup
+      SubnetIds:
+        - !Ref SubnetId
+    Environment:
+      Variables:
+        LOG_LEVEL: !Ref LogLevel
+        POWERTOOLS_SERVICE_NAME: !Join [ '-', [ !Ref AWS::StackName,'xray' ] ]
+        REGION_NAME: !Ref AWS::Region
+        ENVIRONMENT_NAME: !Ref EnvironmentName
+        EVENT_BUS_NAME: !Ref EventBusName
+        DB_USER_NAME: !Join [ '', [ "{{resolve:secretsmanager:", !Ref DBSecretName, ":SecretString:username}}" ] ]
+        DB_PASSWORD: !Join [ '', [ "{{resolve:secretsmanager:", !Ref DBSecretName, ":SecretString:password}}" ] ]
+        DB_NAME: !Join [ '', [ "{{resolve:secretsmanager:", !Ref DBSecretName, ":SecretString:dbname}}" ] ]
+        DB_READ_URL: !Join [ '', [ "{{resolve:secretsmanager:", !Ref DBSecretName, ":SecretString:host}}" ] ]
+        DB_WRITE_URL: !Join [ '', [ "{{resolve:secretsmanager:", !Ref DBSecretName, ":SecretString:host}}" ] ]
+        POWERTOOLS_LOG_LEVEL: !Ref LogLevel
+        POWERTOOLS_TRACER_CAPTURE_RESPONSE: false
+        POWERTOOLS_TRACER_CAPTURE_ERROR: true
+        POWERTOOLS_LOGGER_LOG_EVENT: !FindInMap [ "Environments", !Ref EnvironmentName, "PowerToolsEventLogging" ]
+        POWERTOOLS_LOGGER_SAMPLE_RATE: !FindInMap [ "Environments", !Ref EnvironmentName, "PowerToolsLoggerSampleRate" ]
+        POWERTOOLS_TRACE_DISABLED: !FindInMap [ "Environments", !Ref EnvironmentName, "PowerToolsTracerDisabled" ]
+        APP_CONFIG_APP_NAME: !Ref FeatureStoreApp
+        APP_CONFIG_CACHE_TTL: !FindInMap [ "Environments", !Ref EnvironmentName, "AppConfigCacheTTL" ]
+
+Mappings:
+  Environments:
+    dev:
+      "ApiThrottlingRateLimit": 15
+      "ApiThrottlingBurstLimit": 15
+      "ApiUsagePlanQuotaLimit": 10000
+      "ApiUsagePlanBurstLimit": 30
+      "ApiUsagePlanRateLimit": 15
+      "SQSMessageRetentionPeriod": 345600
+      "PowerToolsTracerDisabled": true
+      "PowerToolsEventLogging": true
+      "PowerToolsLoggerSampleRate": 1
+      "AppConfigCacheTTL": 60
+    qa:
+      "ApiThrottlingRateLimit": 15
+      "ApiThrottlingBurstLimit": 15
+      "ApiUsagePlanQuotaLimit": 10000
+      "ApiUsagePlanBurstLimit": 30
+      "ApiUsagePlanRateLimit": 15
+      "SQSMessageRetentionPeriod": 345600
+      "PowerToolsTracerDisabled": true
+      "PowerToolsEventLogging": false
+      "PowerToolsLoggerSampleRate": 1
+      "AppConfigCacheTTL": 600
+    uat:
+      "ApiThrottlingRateLimit": 15
+      "ApiThrottlingBurstLimit": 15
+      "ApiUsagePlanQuotaLimit": 10000
+      "ApiUsagePlanBurstLimit": 30
+      "ApiUsagePlanRateLimit": 15
+      "SQSMessageRetentionPeriod": 345600
+      "PowerToolsTracerDisabled": true
+      "PowerToolsEventLogging": false
+      "PowerToolsLoggerSampleRate": 1
+      "AppConfigCacheTTL": 600
+    prod:
+      "ApiThrottlingRateLimit": 500
+      "ApiThrottlingBurstLimit": 1000
+      "ApiUsagePlanQuotaLimit": 100000000
+      "ApiUsagePlanBurstLimit": 900
+      "ApiUsagePlanRateLimit": 450
+      "SQSMessageRetentionPeriod": 1209600
+      "PowerToolsTracerDisabled": true
+      "PowerToolsEventLogging": false
+      "PowerToolsLoggerSampleRate": 0.1
+      "AppConfigCacheTTL": 900
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    AllowedValues: [ "dev", "qa", "uat", "prod" ]
+    Default: "dev"
+  EventBusName:
+    Type: String
+    Description: "Event bus name"
+    Default: "test-chat"
+  LogLevel:
+    Type: String
+    Default: "INFO"
+    AllowedValues: [ "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL" ]
+  LambdaVPCID:
+    Type: String
+    Description: "VPC ID"
+  SubnetId:
+    Type: String
+    Description: "VPC SubnetId"
+  StageName:
+    Type: String
+    Description: "API Gateway stage name"
+    Default: "staging"
+  DBSecretName:
+    Type: String
+    Description: The name of the secret containing the knowledge service credentials.
+    Default: "prod/aurora-pg/universal-tracker-store"
+  FeatureStoreApp:
+    Type: String
+    Description: The name of the AppConfig application containing the feature store configuration.
+    Default: "conversation-pipeline-scheduling-lambda"
+  OpenAIAPISecretName:
+    Type: String
+    Description: "Secret name for OpenAI credentials used in acquisition pipeline"
+    Default: "dev/citation/openai"
+
+Resources:
+  TrackerStoreApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref StageName
+      EndpointConfiguration: REGIONAL
+      MethodSettings:
+        - ThrottlingRateLimit:
+            Fn::FindInMap: [ "Environments", !Ref EnvironmentName, "ApiThrottlingRateLimit" ]
+          ThrottlingBurstLimit:
+            Fn::FindInMap: [ "Environments", !Ref EnvironmentName, "ApiThrottlingBurstLimit" ]
+          ResourcePath: "/*"
+          HttpMethod: "*"
+          LoggingLevel: ERROR
+          DataTraceEnabled: FALSE
+      Auth:
+        ApiKeyRequired: TRUE
+        UsagePlan:
+          CreateUsagePlan: PER_API
+          Description: Usage plan for this API
+          Quota:
+            Limit:
+              Fn::FindInMap: [ "Environments", !Ref EnvironmentName, "ApiUsagePlanQuotaLimit" ]
+            Period: MONTH
+          Throttle:
+            BurstLimit:
+              Fn::FindInMap: [ "Environments", !Ref EnvironmentName, "ApiUsagePlanBurstLimit" ]
+            RateLimit:
+              Fn::FindInMap: [ "Environments", !Ref EnvironmentName, "ApiUsagePlanRateLimit" ]
+
+  TrackerApiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: "AllowLambdaServiceToAssumeRole"
+            Effect: "Allow"
+            Action:
+              - "sts:AssumeRole"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+                - "events.amazonaws.com"
+      Policies:
+        - PolicyName: EventBusPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: EventBusPermission
+                Effect: Allow
+                Action:
+                  - events:PutEvents
+                Resource:
+                  - !Sub "arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/${EventBusName}"
+        - PolicyName: AppconfigAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: AppconfigReadAccess
+                Effect: Allow
+                Action:
+                  - appconfig:GetLatestConfiguration
+                  - appconfig:StartConfigurationSession
+                Resource:
+                  - !Sub "arn:aws:appconfig:${AWS::Region}:${AWS::AccountId}:application/*/environment/*"
+        - PolicyName: SecretManagerAccessPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: SecretManagerAccessPolicy
+                Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource:
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${OpenAIAPISecretName}*"
+        - PolicyName: AllowSQSAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: AllowSQSAccess
+                Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                  - sqs:DeleteMessage
+                  - sqs:ReceiveMessage
+                  - sqs:GetQueueAttributes
+                Resource:
+                  - !GetAtt VectorStoreQueue.Arn
+                  - !GetAtt VectorStoreQueueDLQ.Arn
+
+  TrackerApiDependenciesLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      ContentUri: ./layers
+      Description: shared dependencies
+      RetentionPolicy: Delete
+      CompatibleArchitectures:
+        - arm64
+      CompatibleRuntimes:
+        - python3.11
+    Metadata:
+      BuildMethod: python3.11
+
+  TrackerApi:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: "AWS Lambda for Core Data Pipeline step execution"
+      FunctionName: !Join [ "-", [ !Ref AWS::StackName,!Ref EnvironmentName, "api-handler" ] ]
+      CodeUri: .
+      Handler: tracker_api.lambda_handler.handle
+      Role: !GetAtt TrackerApiRole.Arn
+      Tags:
+        "travtus-cost":  !Join [ "-", [ !Ref AWS::StackName,!Ref EnvironmentName, "api-handler" ] ]
+      Events:
+        GetTracker:
+          Type: Api
+          Properties:
+            Path: /tracker/
+            Method: GET
+            RestApiId:
+              Ref: TrackerStoreApi
+        UpsertTracker:
+          Type: Api
+          Properties:
+            Path: /tracker/
+            Method: POST
+            RestApiId:
+              Ref: TrackerStoreApi
+        AnyApiEvent:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: ANY
+            RestApiId:
+              Ref: TrackerStoreApi
+        KeepWarmRule:
+          Type: Schedule
+          Properties:
+            Description: "Keep warm for lambda"
+            Enabled: True
+            Schedule: 'rate(5 minutes)'
+            Input: "{\"testing\":\"true\"}"
+
+  TrackerApiSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Lambda Security Group for the Tracker Store API"
+      GroupName: !Join [ '-', [ !Ref AWS::StackName,'sg' ] ]
+      VpcId: !Ref LambdaVPCID
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+
+  VectorApi:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: "Vector API Lambda"
+      FunctionName: !Join [ "-", [ !Ref AWS::StackName,!Ref EnvironmentName, "vector-api-handler" ] ]
+      CodeUri: .
+      Handler: vector_api.lambda_handler.handle
+      Tags:
+        "travtus-cost": !Join [ "-", [ !Ref AWS::StackName,!Ref EnvironmentName, "vector-api-handler" ] ]
+      Role: !GetAtt TrackerApiRole.Arn
+      Environment:
+        Variables:
+          OPENAI_API_KEY_SECRET_NAME: !Ref OpenAIAPISecretName
+      Events:
+        SearchVector:
+          Type: Api
+          Properties:
+            Path: /_vectors/search
+            Method: POST
+            RestApiId:
+              Ref: TrackerStoreApi
+        SearchVectorFromRawText:
+          Type: Api
+          Properties:
+            Path: /vectors/search
+            Method: POST
+            RestApiId:
+              Ref: TrackerStoreApi
+        InsertVector:  # This endpoint insert vectors with embedding value
+          Type: Api
+          Properties:
+            Path: /_vectors
+            Method: POST
+            RestApiId:
+              Ref: TrackerStoreApi
+        UpsertVector:
+          Type: Api
+          Properties:
+            Path: /_vectors
+            Method: PATCH
+            RestApiId:
+              Ref: TrackerStoreApi
+        InsertVectorFromRawText:  # This endpoint takes raw text and generate embedding and insert vectors
+          Type: Api
+          Properties:
+            Path: /vectors
+            Method: POST
+            RestApiId:
+              Ref: TrackerStoreApi
+        UpdateVectorFromRawText:  # This endpoint takes raw text and generate embedding and insert vectors
+          Type: Api
+          Properties:
+            Path: /vectors
+            Method: PATCH
+            RestApiId:
+              Ref: TrackerStoreApi
+        GenerateEmbedding:
+          Type: Api
+          Properties:
+            Path: /embedding
+            Method: POST
+            RestApiId:
+              Ref: TrackerStoreApi
+        VectorStoreEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt VectorStoreQueue.Arn
+        KeepWarmRule:
+          Type: Schedule
+          Properties:
+            Description: "Keep warm for lambda"
+            Enabled: True
+            Schedule: 'rate(5 minutes)'
+            Input: "{\"testing\":\"true\"}"
+
+  VectorStoreListener:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Join [ '-', [ "vector-store", !Ref EnvironmentName ] ]
+      Description: "Vector Store Event Listener"
+      EventBusName: !Ref EventBusName
+      EventPattern:
+        source:
+          - universal-tracker-store.vector-api
+          - core-data-pipeline.step-execution
+        detail-type:
+          - vector_store.insert_vectors
+          - vector_store.update_vectors
+      Targets:
+        - Arn: !GetAtt VectorStoreQueue.Arn
+          Id: vector-store-sqs
+
+  EventBridgeToVectorStoreSqsPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: SQS:SendMessage
+            Resource: !GetAtt VectorStoreQueue.Arn
+      Queues:
+        - Ref: VectorStoreQueue
+
+  VectorStoreQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 172800
+      VisibilityTimeout: 1800
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt VectorStoreQueueDLQ.Arn
+        maxReceiveCount: 3
+  VectorStoreQueueDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 604800
+
+Outputs:
+    TrackerApi:
+        Description: "API Gateway endpoint URL for the Tracker Store API"
+        Value: !Sub "https://${TrackerStoreApi}.execute-api.${AWS::Region}.amazonaws.com/${StageName}/"

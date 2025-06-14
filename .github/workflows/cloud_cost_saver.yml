@@ -1,0 +1,22 @@
+name: Cloud Cost Saver
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Run Cloud Cost Saver
+      uses: ./.github/actions/cloud_cost_saver
+      with:
+        template: src/fixtures/aws/cfn-testing.yaml
+        environment: default
+        samconfig: src/fixtures/aws/samconfig.toml
+        config: .cloudsaving.yaml

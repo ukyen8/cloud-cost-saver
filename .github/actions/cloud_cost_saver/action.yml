@@ -1,0 +1,26 @@
+name: "Cloud Cost Saver"
+description: "Analyze CloudFormation templates and provide actionable suggestions to optimize cloud costs."
+author: "Your Name <your.email@example.com>"
+inputs:
+  template:
+    description: "Path to the CloudFormation template file"
+    required: true
+  environment:
+    description: "Environment name"
+    required: true
+    default: "default"
+  samconfig:
+    description: "Path to the SAM configuration file"
+    required: false
+  config:
+    description: "Path to the Cloud Cost Saver configuration file"
+    required: true
+    default: "./.cloudsaving.yaml"
+runs:
+  using: "docker"
+  image: "Dockerfile"
+  args:
+    - "${{ inputs.template }}"
+    - "${{ inputs.environment }}"
+    - "${{ inputs.samconfig }}"
+    - "${{ inputs.config }}"

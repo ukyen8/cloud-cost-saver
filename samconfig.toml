@@ -1,0 +1,37 @@
+version = 0.1
+[dev.deploy.parameters]
+stack_name = "universal-tracker-api"
+resolve_s3 = true
+s3_prefix = "universal-tracker-api"
+region = "us-east-2"
+capabilities = "CAPABILITY_NAMED_IAM"
+parameter_overrides = "EnvironmentName=\"dev\" EventBusName=\"test-chat\" LogLevel=\"DEBUG\" LambdaVPCID=\"vpc-06ad55750be780455\" SubnetId=\"subnet-0b3f318ad2d7cf8a1\" StageName=\"staging\" DBSecretName=\"dev/aurora-pg/universal-tracker-store\" FeatureStoreApp=\"conversation-pipeline-scheduling-lambda\" OpenAIAPISecretName=\"dev/citation/openai\""
+image_repositories = []
+confirm_changeset = true
+
+[qa.deploy.parameters]
+stack_name = "universal-tracker-api"
+resolve_s3 = true
+s3_prefix = "universal-tracker-api"
+region = "us-east-2"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "EnvironmentName=\"qa\"  EventBusName=\"adam3-bus\" StageName=\"staging\" LogLevel=\"INFO\" LambdaVPCID=\"vpc-044bd3fcb34a9dfb8\" SubnetId=\"subnet-0c7ce2edd7e67559d\" DBSecretName=\"qa/aurora-pg/universal-tracker-store\" OpenAIAPISecretName=\"qa/citation/openai\""
+image_repositories = []
+
+[uat.deploy.parameters]
+stack_name = "universal-tracker-api"
+resolve_s3 = true
+s3_prefix = "universal-tracker-api"
+region = "us-east-2"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "EnvironmentName=\"uat\"  EventBusName=\"adam3-bus\" StageName=\"staging\" LogLevel=\"INFO\" LambdaVPCID=\"vpc-0adc7c88abb4d7371\" SubnetId=\"subnet-04e92298cc91689b8\" DBSecretName=\"uat/aurora-pg/universal-tracker-store\" OpenAIAPISecretName=\"uat/citation/openai\""
+image_repositories = []
+
+[prod.deploy.parameters]
+stack_name = "universal-tracker-api"
+resolve_s3 = true
+s3_prefix = "universal-tracker-api"
+region = "us-east-2"
+capabilities = "CAPABILITY_IAM"
+parameter_overrides = "EnvironmentName=\"prod\" EventBusName=\"adam3-bus\" StageName=\"staging\" LogLevel=\"ERROR\" LambdaVPCID=\"vpc-02355578a86f68ccd\" SubnetId=\"subnet-038b7b65e7912234e\" DBSecretName=\"prod/aurora-pg/universal-tracker-store\" OpenAIAPISecretName=\"prod/citation/openai\""
+image_repositories = []
