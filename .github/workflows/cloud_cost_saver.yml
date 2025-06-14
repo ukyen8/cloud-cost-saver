@@ -18,5 +18,5 @@ jobs:
         template: src/fixtures/aws/cfn-testing.yaml
         environment: default
         samconfig: src/fixtures/aws/samconfig.toml
-        config: .cloudsaving.yaml
+        config: src/fixtures/.cloudsaving.yaml
         cloud_provider: aws

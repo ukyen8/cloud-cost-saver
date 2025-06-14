@@ -15,7 +15,7 @@ if [ -n "$SAMCONFIG" ]; then
 fi
 
 echo "Listing files in /action:"
-ls -l /action
+ls -l /action/src/fixtures
 
 echo "Listing files in /action/src/fixtures/aws:"
 ls -l /action/src/fixtures/aws
