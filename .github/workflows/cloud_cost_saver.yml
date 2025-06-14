@@ -13,7 +13,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Run Cloud Cost Saver
-      uses: ./.github/actions/cloud_cost_saver
+      uses: ./
       with:
         template: src/fixtures/aws/cfn-testing.yaml
         environment: default
