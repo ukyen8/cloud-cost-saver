@@ -14,4 +14,4 @@ if [ -n "$SAMCONFIG" ]; then
 fi
 
 # Execute the Rust binary with the constructed arguments
-exec /action/target/release/cloud_cost_saver $ARGS
+exec /action/target/release/ccs $ARGS
