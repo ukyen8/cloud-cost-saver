@@ -21,3 +21,4 @@ Cargo.lock
 #.idea/
 #.idea/
 .vscode/
+.DS_Store/

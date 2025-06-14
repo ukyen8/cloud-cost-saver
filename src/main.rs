@@ -25,7 +25,7 @@ struct Args {
     #[arg(short, long)]
     samconfig: Option<String>,
 
-    #[arg(short, long, default_value_t = String::from("./.cloudsaving.yaml"))]
+    #[arg(short, long, default_value_t = String::from("./cloudsaving.yaml"))]
     config: String,
 }
 
@@ -35,7 +35,10 @@ fn main() -> ExitCode {
     let cloud_provider = args.cloud_provider;
     let template_file = args.template;
     let config_file = args.config;
-    let config = Config::load(&config_file).expect("Failed to load config");
+    let config = Config::load(&config_file).unwrap_or_else(|e| {
+        eprintln!("Failed to load config: {e}");
+        std::process::exit(1);
+    });
     let environment = args.environment;
     let mut error_reporter = error_reporter::ErrorReporter::new(&template_file);
 

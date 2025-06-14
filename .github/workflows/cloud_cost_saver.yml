@@ -1,0 +1,22 @@
+name: Cloud Cost Saver
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Run Cloud Cost Saver
+      uses: ./
+      with:
+        template: src/fixtures/aws/cfn-testing-pass.yaml
+        environment: default
+        samconfig: src/fixtures/aws/samconfig.toml
+        config: src/fixtures/cloudsaving.yaml
+        cloud_provider: aws

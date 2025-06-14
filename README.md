@@ -25,7 +25,7 @@ cd cloud-cost-saver
 To analyze a CloudFormation template, use the following command:
 
 ```sh
-cargo run -- aws --template src/fixtures/aws/cfn-testing.yaml --environment default --samconfig src/fixtures/aws/samconfig.toml --config .cloudsaving.yaml
+cargo run -- aws --template src/fixtures/aws/cfn-testing.yaml --environment default --samconfig src/fixtures/aws/samconfig.toml --config cloudsaving.yaml
 ```
 
 ## Example Output
@@ -72,7 +72,7 @@ This section lists the various violations that this tool can detect in AWS Cloud
 
 ### AWS CloudFormation
 
-To configure the Cloud Cost Saver for AWS CloudFormation, create a `.cloudsaving.yaml` file in the root of your project. This file should contain the following settings:
+To configure the Cloud Cost Saver for AWS CloudFormation, create a `cloudsaving.yaml` file in the root of your project. This file should contain the following settings:
 
 ```yaml
 cloudformation:
@@ -127,7 +127,7 @@ A `default` environment will be automatically created. The rules defined under e
 
 ### Rules configuration table
 
-The `.cloudsaving.yaml` file allows you to customize the behavior of the Cloud Cost Saver tool. The below table lists all the rules configurations, specifying whether they are simple (only need to specify enabled or not), value, values, or threshold.
+The `cloudsaving.yaml` file allows you to customize the behavior of the Cloud Cost Saver tool. The below table lists all the rules configurations, specifying whether they are simple (only need to specify enabled or not), value, values, or threshold.
 
 | Rule Type | Configuration Type | Description |
 |-----------|--------------------|-------------|
@@ -141,6 +141,64 @@ The `.cloudsaving.yaml` file allows you to customize the behavior of the Cloud C
 | CW_001     | Threshold          | Log retention period in days |
 | CW_002     | Simple             | Enabled or not |
 | CW_003     | Simple             | Enabled or not |
+
+
+## GitHub Action Usage
+
+You can use Cloud Cost Saver as a GitHub Action to automatically analyze your AWS CloudFormation templates for cost optimization in your CI/CD pipeline.
+
+### Basic Usage
+
+Add the following step to your workflow YAML (e.g., `.github/workflows/cloud_cost_saver.yml`):
+
+```yaml
+- name: Run Cloud Cost Saver
+  uses: ./
+  with:
+    template: src/fixtures/aws/cfn-testing-pass.yaml
+    environment: default
+    samconfig: src/fixtures/aws/samconfig.toml
+    config: src/fixtures/cloudsaving.yaml
+    cloud_provider: aws
+```
+
+### Inputs
+
+| Name           | Description                                              | Required | Example                                      |
+|----------------|----------------------------------------------------------|----------|----------------------------------------------|
+| template       | Path to the CloudFormation template to analyze           | Yes      | src/fixtures/aws/cfn-testing-pass.yaml        |
+| environment    | Environment name for rule overrides (from config)        | No       | default                                      |
+| samconfig      | Path to your AWS SAM config file                         | No       | src/fixtures/aws/samconfig.toml               |
+| config         | Path to the Cloud Cost Saver configuration file          | No       | src/fixtures/cloudsaving.yaml                 |
+| cloud_provider | Cloud provider to analyze (currently only `aws` is supported) | No   | aws                                          |
+
+### Example Workflow
+
+```yaml
+name: Cloud Cost Saver
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run Cloud Cost Saver
+        uses: ./
+        with:
+          template: src/fixtures/aws/cfn-testing-pass.yaml
+          environment: default
+          samconfig: src/fixtures/aws/samconfig.toml
+          config: src/fixtures/cloudsaving.yaml
+          cloud_provider: aws
+```
+
+This will run the Cloud Cost Saver action on every push to `main` and on pull requests, analyzing your CloudFormation template for cost-saving opportunities.
 
 ## Contributing
 
