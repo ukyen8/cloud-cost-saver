@@ -6,6 +6,9 @@ WORKDIR /action
 # Copy the entire project into the container
 COPY . .
 
+# Copy .cloudsaving.yaml explicitly to ensure it is present
+COPY .cloudsaving.yaml .
+
 # Install any necessary dependencies
 RUN apt-get update && apt-get install -y \
     libssl-dev \
