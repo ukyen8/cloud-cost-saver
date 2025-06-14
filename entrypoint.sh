@@ -14,6 +14,12 @@ if [ -n "$SAMCONFIG" ]; then
   ARGS="$ARGS --samconfig \"$SAMCONFIG\""
 fi
 
+echo "Listing files in /action:"
+ls -l /action
+
+echo "Listing files in /action/src/fixtures/aws:"
+ls -l /action/src/fixtures/aws
+
 # Execute the Rust binary with the constructed arguments and cloud provider
 echo "Running: /action/target/release/ccs $ARGS \"$CLOUD_PROVIDER\""
 exec /action/target/release/ccs $ARGS "$CLOUD_PROVIDER"
