@@ -15,4 +15,5 @@ if [ -n "$SAMCONFIG" ]; then
 fi
 
 # Execute the Rust binary with the constructed arguments and cloud provider
+echo "Running: /action/target/release/ccs $ARGS \"$CLOUD_PROVIDER\""
 exec /action/target/release/ccs $ARGS "$CLOUD_PROVIDER"
