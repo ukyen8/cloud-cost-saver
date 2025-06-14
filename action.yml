@@ -16,6 +16,10 @@ inputs:
     description: "Path to the Cloud Cost Saver configuration file"
     required: true
     default: "./.cloudsaving.yaml"
+  cloud_provider:
+    description: "Cloud provider (e.g., aws, azure, gcp)"
+    required: true
+    default: "aws"
 runs:
   using: "docker"
   image: "Dockerfile"
@@ -24,3 +28,4 @@ runs:
     - "${{ inputs.environment }}"
     - "${{ inputs.samconfig }}"
     - "${{ inputs.config }}"
+    - "${{ inputs.cloud_provider }}"

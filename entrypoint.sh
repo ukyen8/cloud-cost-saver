@@ -6,6 +6,7 @@ TEMPLATE="$1"
 ENVIRONMENT="$2"
 SAMCONFIG="$3"
 CONFIG="$4"
+CLOUD_PROVIDER="$5"
 
 ARGS="--template \"$TEMPLATE\" --environment \"$ENVIRONMENT\" --config \"$CONFIG\""
 
@@ -13,5 +14,5 @@ if [ -n "$SAMCONFIG" ]; then
   ARGS="$ARGS --samconfig \"$SAMCONFIG\""
 fi
 
-# Execute the Rust binary with the constructed arguments
-exec /action/target/release/ccs $ARGS
+# Execute the Rust binary with the constructed arguments and cloud provider
+exec /action/target/release/ccs $ARGS "$CLOUD_PROVIDER"
