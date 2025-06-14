@@ -15,7 +15,7 @@ jobs:
     - name: Run Cloud Cost Saver
       uses: ./
       with:
-        template: src/fixtures/aws/cfn-testing.yaml
+        template: src/fixtures/aws/cfn-testing-pass.yaml
         environment: default
         samconfig: src/fixtures/aws/samconfig.toml
         config: src/fixtures/cloudsaving.yaml

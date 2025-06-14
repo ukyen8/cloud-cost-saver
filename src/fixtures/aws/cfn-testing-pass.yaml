@@ -1,0 +1,64 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Example CloudFormation Template"
+
+Resources:
+  MyLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 7
+
+  MyLogGroup2:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      RetentionInDays: 7
+      LogGroupName: MyLogGroup2
+      LogGroupClass: STANDARD
+
+  MyLambdaFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: "MyLambda1"
+      Handler: "index.handler"
+      LoggingConfig:
+        LogGroup: !Ref MyLogGroup
+      Architectures:
+        - arm64
+      Code:
+        S3Bucket: "lambda-functions"
+        S3Key: "function.zip"
+      Role: "arn:aws:iam::123456789012:role/execution_role"
+      Tags:
+        - "tag1": "value1"
+
+  MyLambdaFunction2:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: "MyLambda2"
+      Handler: "index.handler"
+      Code:
+        S3Bucket: "lambda-functions"
+        S3Key: "function.zip"
+      Role: "arn:aws:iam::123456789012:role/execution_role"
+      Architectures:
+        - arm64
+      LoggingConfig:
+        LogGroup: !Ref MyLogGroup2
+      Tags:
+        - "tag1": "value1"
+
+  MyLambdaFunction3:
+      Type: AWS::Serverless::Function
+      Properties:
+        FunctionName: "MyLambda3"
+        Handler: "index.handler"
+        LoggingConfig:
+          LogGroup: !Ref MyLogGroup
+        Architectures:
+          - arm64
+        Tags:
+          - "tag1": "value1"
+        Code:
+          S3Bucket: "lambda-functions"
+          S3Key: "function.zip"
+        Role: "arn:aws:iam::123456789012:role/execution_role"
+        
