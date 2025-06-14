@@ -19,3 +19,4 @@ jobs:
         environment: default
         samconfig: src/fixtures/aws/samconfig.toml
         config: .cloudsaving.yaml
+        cloud_provider: aws

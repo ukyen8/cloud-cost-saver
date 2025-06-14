@@ -9,14 +9,6 @@ cloudformation:
       values:
         - tag1
         - tag2
-    LAMBDA_004:
-      enabled: true
-      threshold: 0
-    LAMBDA_005:
-      enabled: true
-      value: "ERROR"
-    LAMBDA_006:
-      enabled: true
     CW_001:
       enabled: true
       threshold: 14
@@ -24,3 +16,18 @@ cloudformation:
       enabled: true
     CW_003:
       enabled: false
+  environments:
+    dev:
+    sandbox:
+      LAMBDA_002:
+        enabled: false
+      CW_003:
+        enabled: true
+    prod:
+      LAMBDA_003:
+        enabled: true
+        values:
+          - tag3
+          - tag4
+      CW_002:
+        enabled: false
