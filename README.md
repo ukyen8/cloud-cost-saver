@@ -142,6 +142,64 @@ The `cloudsaving.yaml` file allows you to customize the behavior of the Cloud Co
 | CW_002     | Simple             | Enabled or not |
 | CW_003     | Simple             | Enabled or not |
 
+
+## GitHub Action Usage
+
+You can use Cloud Cost Saver as a GitHub Action to automatically analyze your AWS CloudFormation templates for cost optimization in your CI/CD pipeline.
+
+### Basic Usage
+
+Add the following step to your workflow YAML (e.g., `.github/workflows/cloud_cost_saver.yml`):
+
+```yaml
+- name: Run Cloud Cost Saver
+  uses: ./
+  with:
+    template: src/fixtures/aws/cfn-testing-pass.yaml
+    environment: default
+    samconfig: src/fixtures/aws/samconfig.toml
+    config: src/fixtures/cloudsaving.yaml
+    cloud_provider: aws
+```
+
+### Inputs
+
+| Name           | Description                                              | Required | Example                                      |
+|----------------|----------------------------------------------------------|----------|----------------------------------------------|
+| template       | Path to the CloudFormation template to analyze           | Yes      | src/fixtures/aws/cfn-testing-pass.yaml        |
+| environment    | Environment name for rule overrides (from config)        | No       | default                                      |
+| samconfig      | Path to your AWS SAM config file                         | No       | src/fixtures/aws/samconfig.toml               |
+| config         | Path to the Cloud Cost Saver configuration file          | No       | src/fixtures/cloudsaving.yaml                 |
+| cloud_provider | Cloud provider to analyze (currently only `aws` is supported) | No   | aws                                          |
+
+### Example Workflow
+
+```yaml
+name: Cloud Cost Saver
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Run Cloud Cost Saver
+        uses: ./
+        with:
+          template: src/fixtures/aws/cfn-testing-pass.yaml
+          environment: default
+          samconfig: src/fixtures/aws/samconfig.toml
+          config: src/fixtures/cloudsaving.yaml
+          cloud_provider: aws
+```
+
+This will run the Cloud Cost Saver action on every push to `main` and on pull requests, analyzing your CloudFormation template for cost-saving opportunities.
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request on GitHub.
