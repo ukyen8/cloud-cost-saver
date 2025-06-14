@@ -4,7 +4,7 @@ set -e
 # Positional arguments from action.yml
 TEMPLATE="/action/$1"
 ENVIRONMENT="/action/$2"
-SAMCONFIG="/action/$3"
+SAMCONFIG="$3"
 CONFIG="/action/$4"
 CLOUD_PROVIDER="$5"
 
