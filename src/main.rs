@@ -25,7 +25,7 @@ struct Args {
     #[arg(short, long)]
     samconfig: Option<String>,
 
-    #[arg(short, long, default_value_t = String::from("./.cloudsaving.yaml"))]
+    #[arg(short, long, default_value_t = String::from("./cloudsaving.yaml"))]
     config: String,
 }
 

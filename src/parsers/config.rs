@@ -320,7 +320,7 @@ mod tests {
 
     #[test]
     fn test_load_config() {
-        let file_path = "src/fixtures/.cloudsaving.yaml";
+        let file_path = "src/fixtures/cloudsaving.yaml";
         let config = Config::load(file_path).unwrap();
         assert!(config.cloudformation.is_some());
         let cloudformation = config.cloudformation.unwrap();

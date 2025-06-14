@@ -25,7 +25,7 @@ cd cloud-cost-saver
 To analyze a CloudFormation template, use the following command:
 
 ```sh
-cargo run -- aws --template src/fixtures/aws/cfn-testing.yaml --environment default --samconfig src/fixtures/aws/samconfig.toml --config .cloudsaving.yaml
+cargo run -- aws --template src/fixtures/aws/cfn-testing.yaml --environment default --samconfig src/fixtures/aws/samconfig.toml --config cloudsaving.yaml
 ```
 
 ## Example Output
@@ -72,7 +72,7 @@ This section lists the various violations that this tool can detect in AWS Cloud
 
 ### AWS CloudFormation
 
-To configure the Cloud Cost Saver for AWS CloudFormation, create a `.cloudsaving.yaml` file in the root of your project. This file should contain the following settings:
+To configure the Cloud Cost Saver for AWS CloudFormation, create a `cloudsaving.yaml` file in the root of your project. This file should contain the following settings:
 
 ```yaml
 cloudformation:
@@ -127,7 +127,7 @@ A `default` environment will be automatically created. The rules defined under e
 
 ### Rules configuration table
 
-The `.cloudsaving.yaml` file allows you to customize the behavior of the Cloud Cost Saver tool. The below table lists all the rules configurations, specifying whether they are simple (only need to specify enabled or not), value, values, or threshold.
+The `cloudsaving.yaml` file allows you to customize the behavior of the Cloud Cost Saver tool. The below table lists all the rules configurations, specifying whether they are simple (only need to specify enabled or not), value, values, or threshold.
 
 | Rule Type | Configuration Type | Description |
 |-----------|--------------------|-------------|
