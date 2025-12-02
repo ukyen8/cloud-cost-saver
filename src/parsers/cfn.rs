@@ -1,4 +1,3 @@
-use crate::parsers::iac::{AWSResourceType, IaCMapping, IaCOutput, IaCParameter, IaCResource};
 use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -148,7 +147,7 @@ impl CloudFormation {
         // Apply Globals to Resources' properties
         if let Some(resources) = self.resources.as_mut() {
             for (_, resource) in resources {
-                if let AWSResourceType::LambdaFunction | AWSResourceType::LambdaServerlessFunction =
+                if let AWSResourceType::LambdaFunction | AWSResourceType::LambdaServerlessFunction = 
                     &resource.type_
                 {
                     if let Some(global_function_settings) =
@@ -182,7 +181,7 @@ impl CloudFormation {
                             }
 
                             // Apply architecture
-                            if let Some(architecture) =
+                            if let Some(architecture) = 
                                 global_function_settings.get("Architectures")
                             {
                                 properties
@@ -191,7 +190,7 @@ impl CloudFormation {
                             }
 
                             // Apply event maximum retry attempts for serverless lambda function
-                            if let Some(event_invoke_config) =
+                            if let Some(event_invoke_config) = 
                                 global_function_settings.get("EventInvokeConfig")
                             {
                                 if let AWSResourceType::LambdaServerlessFunction = &resource.type_ {
@@ -220,29 +219,13 @@ pub struct Parameter {
     other: HashMap<String, serde_yaml::Value>, // Extra fields can be captured here
 }
 
-impl IaCParameter for Parameter {
-    fn get_type(&self) -> String {
-        self.type_.clone()
-    }
-
-    fn get_default(&self) -> Option<String> {
-        self.default
-            .as_ref()
-            .and_then(|v| v.as_str().map(String::from))
-    }
-
-    fn get_description(&self) -> Option<String> {
-        self.description.clone()
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Mapping {
     #[serde(flatten)]
     map: HashMap<String, HashMap<String, serde_yaml::Value>>,
 }
 
-impl IaCMapping for Mapping {
+impl Mapping {
     fn get_value(&self, key1: &str, key2: &str) -> Option<serde_yaml::Value> {
         self.map.get(key1).and_then(|v| v.get(key2).cloned())
     }
@@ -256,20 +239,6 @@ pub struct Output {
     value: String,
     #[serde(rename = "Export")]
     export: Option<HashMap<String, String>>,
-}
-
-impl IaCOutput for Output {
-    fn get_description(&self) -> Option<String> {
-        Some(self.description.clone())
-    }
-
-    fn get_value(&self) -> String {
-        self.value.clone()
-    }
-
-    fn get_export(&self) -> Option<HashMap<String, String>> {
-        self.export.clone()
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -296,18 +265,27 @@ pub struct Resource {
     pub other: HashMap<String, serde_yaml::Value>, // Capture additional resource attributes if needed
 }
 
-impl IaCResource for Resource {
-    fn get_type(&self) -> String {
-        match &self.type_ {
-            AWSResourceType::LambdaFunction => "AWS::Lambda::Function".to_string(),
-            AWSResourceType::LambdaServerlessFunction => "AWS::Serverless::Function".to_string(),
-            AWSResourceType::CloudWatch => "AWS::Logs::LogGroup".to_string(),
-            AWSResourceType::Unknown(t) => t.clone(),
-        }
-    }
+#[derive(Debug, Serialize)]
+pub enum AWSResourceType {
+    LambdaFunction,
+    LambdaServerlessFunction,
+    CloudWatch,
+    Unknown(String),
+}
 
-    fn get_properties(&self) -> Option<HashMap<String, serde_yaml::Value>> {
-        self.properties.clone()
+impl<'de> Deserialize<'de> for AWSResourceType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let cfn_type = String::deserialize(deserializer)?;
+        let resource_type = match cfn_type.to_uppercase().as_str() {
+            "AWS::LAMBDA::FUNCTION" => Self::LambdaFunction,
+            "AWS::SERVERLESS::FUNCTION" => Self::LambdaServerlessFunction,
+            "AWS::LOGS::LOGGROUP" => Self::CloudWatch,
+            _ => Self::Unknown(cfn_type),
+        };
+        Ok(resource_type)
     }
 }
 
@@ -323,7 +301,7 @@ impl<'de> Deserialize<'de> for Resource {
         let resource_type_str = map
             .shift_remove("Type")
             .ok_or_else(|| serde::de::Error::missing_field("Type"))?;
-        let resource_type: AWSResourceType =
+        let resource_type: AWSResourceType = 
             serde_yaml::from_value(resource_type_str).map_err(serde::de::Error::custom)?;
 
         // Extract `Properties` if present

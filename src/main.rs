@@ -8,7 +8,6 @@ mod error_reporter;
 mod parsers;
 mod rules;
 use crate::parsers::cfn::{parse_cloudformation, parse_samconfig};
-use crate::parsers::iac::InfratructureTemplate;
 use clap::Parser;
 
 #[derive(Parser, Debug)]
@@ -47,16 +46,12 @@ fn main() -> ExitCode {
     } else {
         parsed_cfn.resolve_parameters(None, environment.as_str());
     }
-    let infra_template = InfratructureTemplate {
-        cloudformation: parsed_cfn,
-    };
-
     let line_marker =
         parsers::get_yaml_line_marker(&template_file).expect("Failed to get YAML line marker");
     let mut checker = Checker::new(
         &config,
         &mut error_reporter,
-        &infra_template,
+        &parsed_cfn,
         &line_marker,
         &environment,
     );

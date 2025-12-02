@@ -1,18 +1,16 @@
 use crate::error_reporter::ErrorReporter;
+use crate::parsers::cfn::{AWSResourceType, CloudFormation};
 use crate::parsers::config::{RuleConfig, RuleType};
-use crate::parsers::iac::AWSResourceType;
-use crate::parsers::iac::InfratructureTemplate;
 use crate::parsers::LineMarker;
 use crate::rules::violations::CloudWatchViolation;
 
 pub fn check_cloudwatch_log_group_retention<L: LineMarker>(
-    infra_template: &InfratructureTemplate,
+    cloudformation: &CloudFormation,
     rule_config: &RuleConfig,
     error_reporter: &mut ErrorReporter,
     line_marker: &L,
     environment: &str,
 ) {
-    let cloudformation = &infra_template.cloudformation;
     if let Some(resources) = &cloudformation.resources {
         for (key, resource) in resources {
             if let AWSResourceType::CloudWatch = &resource.type_ {
@@ -62,11 +60,10 @@ pub fn check_cloudwatch_log_group_retention<L: LineMarker>(
 }
 
 pub fn check_cloudwatch_log_group_class<L: LineMarker>(
-    infra_template: &InfratructureTemplate,
+    cloudformation: &CloudFormation,
     error_reporter: &mut ErrorReporter,
     line_marker: &L,
 ) {
-    let cloudformation = &infra_template.cloudformation;
     if let Some(resources) = &cloudformation.resources {
         for (key, resource) in resources {
             if let AWSResourceType::CloudWatch = &resource.type_ {

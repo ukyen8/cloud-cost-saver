@@ -1,17 +1,15 @@
 use crate::error_reporter::ErrorReporter;
+use crate::parsers::cfn::{AWSResourceType, CloudFormation};
 use crate::parsers::config::{RuleConfig, RuleType};
-use crate::parsers::iac::AWSResourceType;
-use crate::parsers::iac::InfratructureTemplate;
 use crate::parsers::LineMarker;
 use crate::rules::violations::LambdaViolation;
 
 pub fn check_lambda_missing_tag<L: LineMarker>(
-    infra_template: &InfratructureTemplate,
+    cloudformation: &CloudFormation,
     rule_config: &RuleConfig,
     error_reporter: &mut ErrorReporter,
     line_marker: &L,
 ) {
-    let cloudformation = &infra_template.cloudformation;
     if let Some(resources) = &cloudformation.resources {
         for (key, resource) in resources {
             if let AWSResourceType::LambdaFunction | AWSResourceType::LambdaServerlessFunction =
@@ -65,11 +63,10 @@ pub fn check_lambda_missing_tag<L: LineMarker>(
 }
 
 pub fn check_lambda_architecture_arm<L: LineMarker>(
-    infra_template: &InfratructureTemplate,
+    cloudformation: &CloudFormation,
     error_reporter: &mut ErrorReporter,
     line_marker: &L,
 ) {
-    let cloudformation = &infra_template.cloudformation;
     if let Some(resources) = &cloudformation.resources {
         for (key, resource) in resources {
             if let AWSResourceType::LambdaFunction | AWSResourceType::LambdaServerlessFunction =
@@ -103,11 +100,10 @@ pub fn check_lambda_architecture_arm<L: LineMarker>(
 }
 
 pub fn check_lambda_missing_log_group<L: LineMarker>(
-    infra_template: &InfratructureTemplate,
+    cloudformation: &CloudFormation,
     error_reporter: &mut ErrorReporter,
     line_marker: &L,
 ) {
-    let cloudformation = &infra_template.cloudformation;
     if let Some(resources) = &cloudformation.resources {
         for (key, resource) in resources {
             if let AWSResourceType::LambdaFunction | AWSResourceType::LambdaServerlessFunction =
@@ -141,12 +137,11 @@ pub fn check_lambda_missing_log_group<L: LineMarker>(
 }
 
 pub fn check_lambda_maxmimum_retry_attempts<L: LineMarker>(
-    infra_template: &InfratructureTemplate,
+    cloudformation: &CloudFormation,
     rule_config: &RuleConfig,
     error_reporter: &mut ErrorReporter,
     line_marker: &L,
 ) {
-    let cloudformation = &infra_template.cloudformation;
     // Fetch threshold from the rule configuration
     let max_retry_attempts_config = rule_config
         .rules
@@ -190,13 +185,12 @@ pub fn check_lambda_maxmimum_retry_attempts<L: LineMarker>(
 }
 
 pub fn check_lambda_powertools_environment_variables<L: LineMarker>(
-    infra_template: &InfratructureTemplate,
+    cloudformation: &CloudFormation,
     rule_config: &RuleConfig,
     error_reporter: &mut ErrorReporter,
     line_marker: &L,
     environment: &str,
 ) {
-    let cloudformation = &infra_template.cloudformation;
     if let Some(resources) = &cloudformation.resources {
         for (key, resource) in resources {
             if let AWSResourceType::LambdaFunction | AWSResourceType::LambdaServerlessFunction =
