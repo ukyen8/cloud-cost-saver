@@ -1,7 +1,7 @@
 FROM rust:latest
 
 # Create a new directory for the action
-WORKDIR /
+WORKDIR /usr/src/app
 
 # Copy the entire project into the container
 COPY . .
@@ -15,9 +15,5 @@ RUN apt-get update && apt-get install -y \
 # Build the project
 RUN cargo build --release
 
-# Copy entrypoint script and make it executable
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-# Set the entrypoint to the script
-ENTRYPOINT ["/entrypoint.sh"]
+# Set the entrypoint to the built binary
+ENTRYPOINT ["/usr/src/app/target/release/ccs"]
