@@ -234,18 +234,9 @@ impl Default for RuleConfig {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Config {
-    #[serde(default)]
-    pub cloudformation: Option<RuleConfig>,
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Config {
-            cloudformation: Some(RuleConfig::default()),
-        }
-    }
+    pub cloudformation: RuleConfig,
 }
 
 impl Config {
@@ -255,33 +246,30 @@ impl Config {
 
         // Merge default rules with the loaded configuration
         let default_rules: HashMap<RuleType, RuleTypeConfig> = RuleConfig::default().rules;
-        if let Some(ref mut cloudformation) = config.cloudformation {
-            for (rule_name, default_rule) in default_rules {
-                cloudformation
-                    .rules
-                    .entry(rule_name)
-                    .or_insert(default_rule);
-            }
+        for (rule_name, default_rule) in default_rules {
+            config.cloudformation
+                .rules
+                .entry(rule_name)
+                .or_insert(default_rule);
         }
 
-        if let Some(ref mut cloudformation) = config.cloudformation {
-            // Create `default` environment
-            cloudformation
-                .environments
-                .entry("default".to_string())
-                .or_insert_with(|| Some(cloudformation.rules.clone()));
-            for rules in cloudformation.environments.values_mut() {
-                // No override rules, apply default rules
-                if rules.is_none() {
-                    rules.replace(cloudformation.rules.clone());
-                } else {
-                    // Merge default rules with the loaded configuration
-                    if let Some(rules) = rules {
-                        for (rule_name, default_rule) in &cloudformation.rules.clone() {
-                            rules
-                                .entry(rule_name.clone())
-                                .or_insert_with(|| default_rule.clone());
-                        }
+        // Create `default` environment
+        config.cloudformation
+            .environments
+            .entry("default".to_string())
+            .or_insert_with(|| Some(config.cloudformation.rules.clone()));
+        
+        for rules in config.cloudformation.environments.values_mut() {
+            // No override rules, apply default rules
+            if rules.is_none() {
+                rules.replace(config.cloudformation.rules.clone());
+            } else {
+                // Merge default rules with the loaded configuration
+                if let Some(rules) = rules {
+                    for (rule_name, default_rule) in &config.cloudformation.rules.clone() {
+                        rules
+                            .entry(rule_name.clone())
+                            .or_insert_with(|| default_rule.clone());
                     }
                 }
             }
@@ -299,8 +287,7 @@ mod tests {
     #[test]
     fn test_default_config() {
         let config = Config::default();
-        assert!(config.cloudformation.is_some());
-        let cloudformation = config.cloudformation.unwrap();
+        let cloudformation = config.cloudformation;
 
         assert!(!cloudformation.enabled(RuleType::LAMBDA_003, "default"));
         assert!(!cloudformation.enabled(RuleType::LAMBDA_002, "default"));
@@ -322,8 +309,7 @@ mod tests {
     fn test_load_config() {
         let file_path = "src/fixtures/cloudsaving.yaml";
         let config = Config::load(file_path).unwrap();
-        assert!(config.cloudformation.is_some());
-        let cloudformation = config.cloudformation.unwrap();
+        let cloudformation = config.cloudformation;
 
         let lambda_architecture_arm = cloudformation.rules.get(&RuleType::LAMBDA_002).unwrap();
         assert!(lambda_architecture_arm.enabled);
@@ -392,7 +378,7 @@ mod tests {
     #[test]
     fn test_default_environment() {
         let config = Config::default();
-        let cloudformation = config.cloudformation.unwrap();
+        let cloudformation = config.cloudformation;
 
         // Test with default environment
         assert!(cloudformation.enabled(RuleType::LAMBDA_001, "default"));

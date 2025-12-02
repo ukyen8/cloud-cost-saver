@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 pub struct InfratructureTemplate {
-    pub cloudformation: Option<CloudFormation>,
+    pub cloudformation: CloudFormation,
 }
 
 #[allow(unused)]

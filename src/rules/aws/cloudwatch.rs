@@ -12,49 +12,48 @@ pub fn check_cloudwatch_log_group_retention<L: LineMarker>(
     line_marker: &L,
     environment: &str,
 ) {
-    if let Some(cloudformation) = &infra_template.cloudformation {
-        if let Some(resources) = &cloudformation.resources {
-            for (key, resource) in resources {
-                if let AWSResourceType::CloudWatch = &resource.type_ {
-                    if let Some(properties) = &resource.properties {
-                        if let Some(retention) = properties.get("RetentionInDays") {
-                            if !rule_config.enabled(RuleType::CW_001, environment) {
-                                continue;
-                            }
-                            if let Some(log_retention_days) =
-                                rule_config.get_rule(RuleType::CW_001, environment)
+    let cloudformation = &infra_template.cloudformation;
+    if let Some(resources) = &cloudformation.resources {
+        for (key, resource) in resources {
+            if let AWSResourceType::CloudWatch = &resource.type_ {
+                if let Some(properties) = &resource.properties {
+                    if let Some(retention) = properties.get("RetentionInDays") {
+                        if !rule_config.enabled(RuleType::CW_001, environment) {
+                            continue;
+                        }
+                        if let Some(log_retention_days) =
+                            rule_config.get_rule(RuleType::CW_001, environment)
+                        {
+                            if let Some(threshold) =
+                                log_retention_days.config_detail.get_threshold_int()
                             {
-                                if let Some(threshold) =
-                                    log_retention_days.config_detail.get_threshold_int()
-                                {
-                                    // Check if the retention period is longer than the threshold
-                                    if retention.as_u64().is_none_or(|v| v > threshold) {
-                                        error_reporter.add_error(
-                                            Box::new(CloudWatchViolation::LogRetentionTooLong),
-                                            key,
-                                            line_marker
-                                                .get_resource_span(vec![
-                                                    key,
-                                                    "Properties",
-                                                    "RetentionInDays",
-                                                ])
-                                                .copied(),
-                                        );
-                                    }
+                                // Check if the retention period is longer than the threshold
+                                if retention.as_u64().is_none_or(|v| v > threshold) {
+                                    error_reporter.add_error(
+                                        Box::new(CloudWatchViolation::LogRetentionTooLong),
+                                        key,
+                                        line_marker
+                                            .get_resource_span(vec![
+                                                key,
+                                                "Properties",
+                                                "RetentionInDays",
+                                            ])
+                                            .copied(),
+                                    );
                                 }
                             }
-                        } else {
-                            if !rule_config.enabled(RuleType::CW_002, environment) {
-                                continue;
-                            }
-                            error_reporter.add_error(
-                                Box::new(CloudWatchViolation::NoLogRetention),
-                                key,
-                                line_marker
-                                    .get_resource_span(vec![key, "Properties"])
-                                    .copied(),
-                            );
                         }
+                    } else {
+                        if !rule_config.enabled(RuleType::CW_002, environment) {
+                            continue;
+                        }
+                        error_reporter.add_error(
+                            Box::new(CloudWatchViolation::NoLogRetention),
+                            key,
+                            line_marker
+                                .get_resource_span(vec![key, "Properties"])
+                                .copied(),
+                        );
                     }
                 }
             }
@@ -67,30 +66,29 @@ pub fn check_cloudwatch_log_group_class<L: LineMarker>(
     error_reporter: &mut ErrorReporter,
     line_marker: &L,
 ) {
-    if let Some(cloudformation) = &infra_template.cloudformation {
-        if let Some(resources) = &cloudformation.resources {
-            for (key, resource) in resources {
-                if let AWSResourceType::CloudWatch = &resource.type_ {
-                    if let Some(properties) = &resource.properties {
-                        if let Some(log_group_class) = properties.get("LogGroupClass") {
-                            if log_group_class.as_str() == Some("STANDARD") {
-                                error_reporter.add_error(
-                                    Box::new(CloudWatchViolation::InfrequentAccessLogGroupClass),
-                                    key,
-                                    line_marker
-                                        .get_resource_span(vec![key, "Properties", "LogGroupClass"])
-                                        .copied(),
-                                );
-                            }
-                        } else {
+    let cloudformation = &infra_template.cloudformation;
+    if let Some(resources) = &cloudformation.resources {
+        for (key, resource) in resources {
+            if let AWSResourceType::CloudWatch = &resource.type_ {
+                if let Some(properties) = &resource.properties {
+                    if let Some(log_group_class) = properties.get("LogGroupClass") {
+                        if log_group_class.as_str() == Some("STANDARD") {
                             error_reporter.add_error(
                                 Box::new(CloudWatchViolation::InfrequentAccessLogGroupClass),
                                 key,
                                 line_marker
-                                    .get_resource_span(vec![key, "Properties"])
+                                    .get_resource_span(vec![key, "Properties", "LogGroupClass"])
                                     .copied(),
                             );
                         }
+                    } else {
+                        error_reporter.add_error(
+                            Box::new(CloudWatchViolation::InfrequentAccessLogGroupClass),
+                            key,
+                            line_marker
+                                .get_resource_span(vec![key, "Properties"])
+                                .copied(),
+                        );
                     }
                 }
             }

@@ -25,7 +25,7 @@ cd cloud-cost-saver
 To analyze a CloudFormation template, use the following command:
 
 ```sh
-cargo run -- aws --template src/fixtures/aws/cfn-testing.yaml --environment default --samconfig src/fixtures/aws/samconfig.toml --config cloudsaving.yaml
+cargo run -- --template src/fixtures/aws/cfn-testing.yaml --environment default --samconfig src/fixtures/aws/samconfig.toml --config cloudsaving.yaml
 ```
 
 ## Example Output
@@ -170,7 +170,6 @@ Add the following step to your workflow YAML (e.g., `.github/workflows/cloud_cos
 | environment    | Environment name for rule overrides (from config)        | No       | default                                      |
 | samconfig      | Path to your AWS SAM config file                         | No       | src/fixtures/aws/samconfig.toml               |
 | config         | Path to the Cloud Cost Saver configuration file          | No       | src/fixtures/cloudsaving.yaml                 |
-| cloud_provider | Cloud provider to analyze (currently only `aws` is supported) | No   | aws                                          |
 
 ### Example Workflow
 
@@ -195,7 +194,6 @@ jobs:
           environment: default
           samconfig: src/fixtures/aws/samconfig.toml
           config: src/fixtures/cloudsaving.yaml
-          cloud_provider: aws
 ```
 
 This will run the Cloud Cost Saver action on every push to `main` and on pull requests, analyzing your CloudFormation template for cost-saving opportunities.

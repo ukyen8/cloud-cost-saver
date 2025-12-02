@@ -30,72 +30,72 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
     }
 
     pub(crate) fn run_checks(&mut self) {
-        if let Some(rule_config) = &self.config.cloudformation {
-            if rule_config.enabled(RuleType::LAMBDA_003, self.environment) {
-                aws::lambda::check_lambda_missing_tag(
-                    self.infra_template,
-                    rule_config,
-                    self.error_reporter,
-                    self.line_marker,
-                );
-            }
-            if rule_config.enabled(RuleType::LAMBDA_002, self.environment) {
-                aws::lambda::check_lambda_architecture_arm(
-                    self.infra_template,
-                    self.error_reporter,
-                    self.line_marker,
-                );
-            }
+        let rule_config = &self.config.cloudformation;
+        
+        if rule_config.enabled(RuleType::LAMBDA_003, self.environment) {
+            aws::lambda::check_lambda_missing_tag(
+                self.infra_template,
+                rule_config,
+                self.error_reporter,
+                self.line_marker,
+            );
+        }
+        if rule_config.enabled(RuleType::LAMBDA_002, self.environment) {
+            aws::lambda::check_lambda_architecture_arm(
+                self.infra_template,
+                self.error_reporter,
+                self.line_marker,
+            );
+        }
 
-            if rule_config.enabled(RuleType::LAMBDA_001, self.environment) {
-                aws::lambda::check_lambda_missing_log_group(
-                    self.infra_template,
-                    self.error_reporter,
-                    self.line_marker,
-                );
-            }
+        if rule_config.enabled(RuleType::LAMBDA_001, self.environment) {
+            aws::lambda::check_lambda_missing_log_group(
+                self.infra_template,
+                self.error_reporter,
+                self.line_marker,
+            );
+        }
 
-            if rule_config.enabled(RuleType::LAMBDA_004, self.environment) {
-                aws::lambda::check_lambda_maxmimum_retry_attempts(
-                    self.infra_template,
-                    rule_config,
-                    self.error_reporter,
-                    self.line_marker,
-                );
-            }
+        if rule_config.enabled(RuleType::LAMBDA_004, self.environment) {
+            aws::lambda::check_lambda_maxmimum_retry_attempts(
+                self.infra_template,
+                rule_config,
+                self.error_reporter,
+                self.line_marker,
+            );
+        }
 
-            if rule_config.enabled(RuleType::LAMBDA_005, self.environment)
-                || rule_config.enabled(RuleType::LAMBDA_006, self.environment)
-                || rule_config.enabled(RuleType::LAMBDA_007, self.environment)
-            {
-                aws::lambda::check_lambda_powertools_environment_variables(
-                    self.infra_template,
-                    rule_config,
-                    self.error_reporter,
-                    self.line_marker,
-                    self.environment,
-                );
-            }
+        if rule_config.enabled(RuleType::LAMBDA_005, self.environment)
+            || rule_config.enabled(RuleType::LAMBDA_006, self.environment)
+            || rule_config.enabled(RuleType::LAMBDA_007, self.environment)
+        {
+            aws::lambda::check_lambda_powertools_environment_variables(
+                self.infra_template,
+                rule_config,
+                self.error_reporter,
+                self.line_marker,
+                self.environment,
+            );
+        }
 
-            if rule_config.enabled(RuleType::CW_001, self.environment)
-                || rule_config.enabled(RuleType::CW_002, self.environment)
-            {
-                aws::cloudwatch::check_cloudwatch_log_group_retention(
-                    self.infra_template,
-                    rule_config,
-                    self.error_reporter,
-                    self.line_marker,
-                    self.environment,
-                );
-            }
+        if rule_config.enabled(RuleType::CW_001, self.environment)
+            || rule_config.enabled(RuleType::CW_002, self.environment)
+        {
+            aws::cloudwatch::check_cloudwatch_log_group_retention(
+                self.infra_template,
+                rule_config,
+                self.error_reporter,
+                self.line_marker,
+                self.environment,
+            );
+        }
 
-            if rule_config.enabled(RuleType::CW_003, self.environment) {
-                aws::cloudwatch::check_cloudwatch_log_group_class(
-                    self.infra_template,
-                    self.error_reporter,
-                    self.line_marker,
-                );
-            }
+        if rule_config.enabled(RuleType::CW_003, self.environment) {
+            aws::cloudwatch::check_cloudwatch_log_group_class(
+                self.infra_template,
+                self.error_reporter,
+                self.line_marker,
+            );
         }
     }
 }
@@ -173,7 +173,7 @@ mod tests_cfn {
             );
 
             Config {
-                cloudformation: Some(default_rule_config),
+                cloudformation: default_rule_config,
             }
         }
 
@@ -197,13 +197,12 @@ mod tests_cfn {
             rule_type: RuleType,
             config_detail: Option<RuleTypeConfigDetail>,
         ) {
-            if let Some(cloudformation) = &mut config.cloudformation {
-                if let Some(Some(env)) = cloudformation.environments.get_mut("default") {
-                    if let Some(rule) = env.get_mut(&rule_type) {
-                        rule.enabled = true;
-                        if let Some(config_detail) = config_detail {
-                            rule.config_detail = config_detail.clone();
-                        }
+            let cloudformation = &mut config.cloudformation;
+            if let Some(Some(env)) = cloudformation.environments.get_mut("default") {
+                if let Some(rule) = env.get_mut(&rule_type) {
+                    rule.enabled = true;
+                    if let Some(config_detail) = config_detail {
+                        rule.config_detail = config_detail.clone();
                     }
                 }
             }
@@ -229,7 +228,7 @@ mod tests_cfn {
                     config,
                     error_reporter: get_error_reporter(template_name),
                     infra_template: InfratructureTemplate {
-                        cloudformation: Some(get_cloudformation(template_name)),
+                        cloudformation: get_cloudformation(template_name),
                     },
                     line_marker: get_line_marker(template_name),
                 }
