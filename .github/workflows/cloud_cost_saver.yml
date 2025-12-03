@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
     - name: Run Cloud Cost Saver
       uses: ./
       with:
@@ -19,4 +19,3 @@ jobs:
         environment: default
         samconfig: src/fixtures/aws/samconfig.toml
         config: src/fixtures/cloudsaving.yaml
-        cloud_provider: aws

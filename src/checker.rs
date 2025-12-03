@@ -1,13 +1,13 @@
 use crate::error_reporter::ErrorReporter;
+use crate::parsers::cfn::CloudFormation;
 use crate::parsers::config::{Config, RuleType};
-use crate::parsers::iac::InfratructureTemplate;
 use crate::parsers::LineMarker;
 use crate::rules::aws;
 
 pub(crate) struct Checker<'a, L: LineMarker + 'a> {
     config: &'a Config,
     error_reporter: &'a mut ErrorReporter,
-    infra_template: &'a InfratructureTemplate,
+    cloudformation: &'a CloudFormation,
     line_marker: &'a L,
     environment: &'a str,
 }
@@ -16,86 +16,86 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
     pub(crate) fn new(
         config: &'a Config,
         error_reporter: &'a mut ErrorReporter,
-        infra_template: &'a InfratructureTemplate,
+        cloudformation: &'a CloudFormation,
         line_marker: &'a L,
         environment: &'a str,
     ) -> Checker<'a, L> {
         Checker {
             config,
             error_reporter,
-            infra_template,
+            cloudformation,
             line_marker,
             environment,
         }
     }
 
     pub(crate) fn run_checks(&mut self) {
-        if let Some(rule_config) = &self.config.cloudformation {
-            if rule_config.enabled(RuleType::LAMBDA_003, self.environment) {
-                aws::lambda::check_lambda_missing_tag(
-                    self.infra_template,
-                    rule_config,
-                    self.error_reporter,
-                    self.line_marker,
-                );
-            }
-            if rule_config.enabled(RuleType::LAMBDA_002, self.environment) {
-                aws::lambda::check_lambda_architecture_arm(
-                    self.infra_template,
-                    self.error_reporter,
-                    self.line_marker,
-                );
-            }
+        let rule_config = &self.config.cloudformation;
 
-            if rule_config.enabled(RuleType::LAMBDA_001, self.environment) {
-                aws::lambda::check_lambda_missing_log_group(
-                    self.infra_template,
-                    self.error_reporter,
-                    self.line_marker,
-                );
-            }
+        if rule_config.enabled(RuleType::LAMBDA_003, self.environment) {
+            aws::lambda::check_lambda_missing_tag(
+                self.cloudformation,
+                rule_config,
+                self.error_reporter,
+                self.line_marker,
+            );
+        }
+        if rule_config.enabled(RuleType::LAMBDA_002, self.environment) {
+            aws::lambda::check_lambda_architecture_arm(
+                self.cloudformation,
+                self.error_reporter,
+                self.line_marker,
+            );
+        }
 
-            if rule_config.enabled(RuleType::LAMBDA_004, self.environment) {
-                aws::lambda::check_lambda_maxmimum_retry_attempts(
-                    self.infra_template,
-                    rule_config,
-                    self.error_reporter,
-                    self.line_marker,
-                );
-            }
+        if rule_config.enabled(RuleType::LAMBDA_001, self.environment) {
+            aws::lambda::check_lambda_missing_log_group(
+                self.cloudformation,
+                self.error_reporter,
+                self.line_marker,
+            );
+        }
 
-            if rule_config.enabled(RuleType::LAMBDA_005, self.environment)
-                || rule_config.enabled(RuleType::LAMBDA_006, self.environment)
-                || rule_config.enabled(RuleType::LAMBDA_007, self.environment)
-            {
-                aws::lambda::check_lambda_powertools_environment_variables(
-                    self.infra_template,
-                    rule_config,
-                    self.error_reporter,
-                    self.line_marker,
-                    self.environment,
-                );
-            }
+        if rule_config.enabled(RuleType::LAMBDA_004, self.environment) {
+            aws::lambda::check_lambda_maxmimum_retry_attempts(
+                self.cloudformation,
+                rule_config,
+                self.error_reporter,
+                self.line_marker,
+            );
+        }
 
-            if rule_config.enabled(RuleType::CW_001, self.environment)
-                || rule_config.enabled(RuleType::CW_002, self.environment)
-            {
-                aws::cloudwatch::check_cloudwatch_log_group_retention(
-                    self.infra_template,
-                    rule_config,
-                    self.error_reporter,
-                    self.line_marker,
-                    self.environment,
-                );
-            }
+        if rule_config.enabled(RuleType::LAMBDA_005, self.environment)
+            || rule_config.enabled(RuleType::LAMBDA_006, self.environment)
+            || rule_config.enabled(RuleType::LAMBDA_007, self.environment)
+        {
+            aws::lambda::check_lambda_powertools_environment_variables(
+                self.cloudformation,
+                rule_config,
+                self.error_reporter,
+                self.line_marker,
+                self.environment,
+            );
+        }
 
-            if rule_config.enabled(RuleType::CW_003, self.environment) {
-                aws::cloudwatch::check_cloudwatch_log_group_class(
-                    self.infra_template,
-                    self.error_reporter,
-                    self.line_marker,
-                );
-            }
+        if rule_config.enabled(RuleType::CW_001, self.environment)
+            || rule_config.enabled(RuleType::CW_002, self.environment)
+        {
+            aws::cloudwatch::check_cloudwatch_log_group_retention(
+                self.cloudformation,
+                rule_config,
+                self.error_reporter,
+                self.line_marker,
+                self.environment,
+            );
+        }
+
+        if rule_config.enabled(RuleType::CW_003, self.environment) {
+            aws::cloudwatch::check_cloudwatch_log_group_class(
+                self.cloudformation,
+                self.error_reporter,
+                self.line_marker,
+            );
         }
     }
 }
@@ -156,7 +156,6 @@ mod tests_cfn {
             Config, RuleConfig, RuleType, RuleTypeConfigDetail, ThresholdValue,
         };
         use crate::parsers::get_yaml_line_marker;
-        use crate::parsers::iac::InfratructureTemplate;
         use crate::parsers::YamlLineMarker;
         use crate::rules::violations::{CloudWatchViolation, LambdaViolation};
         use rstest::*;
@@ -173,7 +172,7 @@ mod tests_cfn {
             );
 
             Config {
-                cloudformation: Some(default_rule_config),
+                cloudformation: default_rule_config,
             }
         }
 
@@ -197,13 +196,12 @@ mod tests_cfn {
             rule_type: RuleType,
             config_detail: Option<RuleTypeConfigDetail>,
         ) {
-            if let Some(cloudformation) = &mut config.cloudformation {
-                if let Some(Some(env)) = cloudformation.environments.get_mut("default") {
-                    if let Some(rule) = env.get_mut(&rule_type) {
-                        rule.enabled = true;
-                        if let Some(config_detail) = config_detail {
-                            rule.config_detail = config_detail.clone();
-                        }
+            let cloudformation = &mut config.cloudformation;
+            if let Some(Some(env)) = cloudformation.environments.get_mut("default") {
+                if let Some(rule) = env.get_mut(&rule_type) {
+                    rule.enabled = true;
+                    if let Some(config_detail) = config_detail {
+                        rule.config_detail = config_detail.clone();
                     }
                 }
             }
@@ -212,7 +210,7 @@ mod tests_cfn {
         struct TestContext {
             config: Config,
             error_reporter: ErrorReporter,
-            infra_template: InfratructureTemplate,
+            cloudformation: CloudFormation,
             line_marker: YamlLineMarker,
         }
 
@@ -228,9 +226,7 @@ mod tests_cfn {
                 Self {
                     config,
                     error_reporter: get_error_reporter(template_name),
-                    infra_template: InfratructureTemplate {
-                        cloudformation: Some(get_cloudformation(template_name)),
-                    },
+                    cloudformation: get_cloudformation(template_name),
                     line_marker: get_line_marker(template_name),
                 }
             }
@@ -239,7 +235,7 @@ mod tests_cfn {
                 Checker::new(
                     &self.config,
                     &mut self.error_reporter,
-                    &self.infra_template,
+                    &self.cloudformation,
                     &self.line_marker,
                     "default",
                 )
