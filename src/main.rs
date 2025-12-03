@@ -60,6 +60,6 @@ fn main() -> ExitCode {
         eprintln!("{}", error_reporter.render_errors());
         return ExitCode::FAILURE;
     }
-    
+
     ExitCode::SUCCESS
 }

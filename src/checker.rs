@@ -31,7 +31,7 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
 
     pub(crate) fn run_checks(&mut self) {
         let rule_config = &self.config.cloudformation;
-        
+
         if rule_config.enabled(RuleType::LAMBDA_003, self.environment) {
             aws::lambda::check_lambda_missing_tag(
                 self.cloudformation,

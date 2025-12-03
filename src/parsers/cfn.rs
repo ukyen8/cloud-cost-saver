@@ -147,7 +147,7 @@ impl CloudFormation {
         // Apply Globals to Resources' properties
         if let Some(resources) = self.resources.as_mut() {
             for (_, resource) in resources {
-                if let AWSResourceType::LambdaFunction | AWSResourceType::LambdaServerlessFunction = 
+                if let AWSResourceType::LambdaFunction | AWSResourceType::LambdaServerlessFunction =
                     &resource.type_
                 {
                     if let Some(global_function_settings) =
@@ -181,7 +181,7 @@ impl CloudFormation {
                             }
 
                             // Apply architecture
-                            if let Some(architecture) = 
+                            if let Some(architecture) =
                                 global_function_settings.get("Architectures")
                             {
                                 properties
@@ -190,7 +190,7 @@ impl CloudFormation {
                             }
 
                             // Apply event maximum retry attempts for serverless lambda function
-                            if let Some(event_invoke_config) = 
+                            if let Some(event_invoke_config) =
                                 global_function_settings.get("EventInvokeConfig")
                             {
                                 if let AWSResourceType::LambdaServerlessFunction = &resource.type_ {
@@ -301,7 +301,7 @@ impl<'de> Deserialize<'de> for Resource {
         let resource_type_str = map
             .shift_remove("Type")
             .ok_or_else(|| serde::de::Error::missing_field("Type"))?;
-        let resource_type: AWSResourceType = 
+        let resource_type: AWSResourceType =
             serde_yaml::from_value(resource_type_str).map_err(serde::de::Error::custom)?;
 
         // Extract `Properties` if present

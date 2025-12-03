@@ -247,18 +247,20 @@ impl Config {
         // Merge default rules with the loaded configuration
         let default_rules: HashMap<RuleType, RuleTypeConfig> = RuleConfig::default().rules;
         for (rule_name, default_rule) in default_rules {
-            config.cloudformation
+            config
+                .cloudformation
                 .rules
                 .entry(rule_name)
                 .or_insert(default_rule);
         }
 
         // Create `default` environment
-        config.cloudformation
+        config
+            .cloudformation
             .environments
             .entry("default".to_string())
             .or_insert_with(|| Some(config.cloudformation.rules.clone()));
-        
+
         for rules in config.cloudformation.environments.values_mut() {
             // No override rules, apply default rules
             if rules.is_none() {
