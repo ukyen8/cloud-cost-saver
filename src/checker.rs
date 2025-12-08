@@ -97,6 +97,24 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
                 self.line_marker,
             );
         }
+
+
+
+        if rule_config.enabled(RuleType::LAMBDA_008, self.environment) {
+            aws::lambda::check_lambda_vpc_gateway_endpoints(
+                self.cloudformation,
+                self.error_reporter,
+                self.line_marker,
+            );
+        }
+
+        if rule_config.enabled(RuleType::LAMBDA_009, self.environment) {
+            aws::lambda::check_lambda_provisioned_concurrency_autoscaling(
+                self.cloudformation,
+                self.error_reporter,
+                self.line_marker,
+            );
+        }
     }
 }
 
@@ -396,5 +414,104 @@ mod tests_cfn {
             ]);
             expected.assert_all_match(&context.error_reporter.render_errors());
         }
+
+
+
+        #[rstest]
+        #[case(
+            "cfn-advanced-cost.yaml",
+            RuleType::LAMBDA_008,
+            None,
+            LambdaViolation::NoVPCGatewayEndpoint
+        )]
+        fn test_lambda_008(
+            #[case] template_name: &str,
+            #[case] rule_type: RuleType,
+            #[case] config_detail: Option<RuleTypeConfigDetail>,
+            #[case] violation: LambdaViolation,
+            setup_checker: impl Fn(&str, RuleType, Option<RuleTypeConfigDetail>) -> TestContext,
+        ) {
+            let mut context = setup_checker(template_name, rule_type, config_detail);
+            let mut checker = context.create_checker();
+            checker.run_checks();
+
+            let expected = ExpectedViolations::new(vec![ExpectedViolation::new(
+                &violation,
+                "MyVPCLambda",
+            )]);
+            expected.assert_all_match(&context.error_reporter.render_errors());
+        }
+
+        #[rstest]
+        #[case(
+            "cfn-advanced-cost.yaml",
+            RuleType::LAMBDA_009,
+            None,
+            LambdaViolation::StaticProvisionedConcurrencyWithoutAutoScaling
+        )]
+        fn test_lambda_009(
+            #[case] template_name: &str,
+            #[case] rule_type: RuleType,
+            #[case] config_detail: Option<RuleTypeConfigDetail>,
+            #[case] violation: LambdaViolation,
+            setup_checker: impl Fn(&str, RuleType, Option<RuleTypeConfigDetail>) -> TestContext,
+        ) {
+            let mut context = setup_checker(template_name, rule_type, config_detail);
+            let mut checker = context.create_checker();
+            checker.run_checks();
+
+            let expected = ExpectedViolations::new(vec![
+                ExpectedViolation::new(&violation, "MyStaticConcurrencyLambda"),
+                ExpectedViolation::new(&violation, "MyStaticServerless"),
+            ]);
+            expected.assert_all_match(&context.error_reporter.render_errors());
+        }
+
+        #[rstest]
+        #[case("cfn-advanced-cost.yaml", crate::parsers::config::Preset::Minimal)]
+        fn test_preset_minimal(
+            #[case] template_name: &str,
+            #[case] preset: crate::parsers::config::Preset,
+            setup_checker: impl Fn(&str, RuleType, Option<RuleTypeConfigDetail>) -> TestContext,
+        ) {
+            // Need a slight variance of setup_checker to apply preset
+            let mut context = setup_checker(template_name, RuleType::LAMBDA_001, None); 
+            // Apply preset to config manually since setup_checker is rigid
+            context.config.cloudformation.apply_preset(preset);
+            
+            let mut checker = context.create_checker();
+            checker.run_checks();
+
+            // Minimal should NOT catch Missing Tags (LAMBDA-003) or Event Filtering (LAMBDA-008)
+            // It SHOULD catch Static Concurrency (LAMBDA-009)
+            let errors = context.error_reporter.render_errors();
+            
+            assert!(!errors.contains("LAMBDA-003"));
+            assert!(errors.contains("LAMBDA-009"));
+        }
+
+        #[rstest]
+        #[case("cfn-advanced-cost.yaml", crate::parsers::config::Preset::Strict)]
+        fn test_preset_strict(
+            #[case] template_name: &str,
+            #[case] preset: crate::parsers::config::Preset,
+            setup_checker: impl Fn(&str, RuleType, Option<RuleTypeConfigDetail>) -> TestContext,
+        ) {
+            let mut context = setup_checker(template_name, RuleType::LAMBDA_001, None);
+            context.config.cloudformation.apply_preset(preset);
+            
+            let mut checker = context.create_checker();
+            checker.run_checks();
+
+            // Strict SHOULD catch Missing Tags (LAMBDA-003), Filtering (LAMBDA-008), and Concurrency (LAMBDA-009)
+            let errors = context.error_reporter.render_errors();
+
+            // Note: LAMBDA-003 requires configuration of values normally, but Strict preset provides default "CostCenter"
+            // MyUntaggedLambda has NO tags, so it should fail if rule is enabled checking for "CostCenter"
+            assert!(errors.contains("LAMBDA-003"));
+            assert!(errors.contains("LAMBDA-009"));
+        }
     }
 }
+
+

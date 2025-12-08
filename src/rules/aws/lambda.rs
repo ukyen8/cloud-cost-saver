@@ -290,3 +290,153 @@ pub fn check_lambda_powertools_environment_variables<L: LineMarker>(
         }
     }
 }
+
+
+
+// LAMBDA-008: Check for VPC Gateway Endpoints
+pub fn check_lambda_vpc_gateway_endpoints<L: LineMarker>(
+    cloudformation: &CloudFormation,
+    error_reporter: &mut ErrorReporter,
+    line_marker: &L,
+) {
+    if let Some(resources) = &cloudformation.resources {
+        // First check if there are any Lambdas in a VPC
+        let mut vpc_lambda_found = false;
+        let mut violation_candidates = Vec::new();
+
+        for (key, resource) in resources {
+            if let AWSResourceType::LambdaFunction | AWSResourceType::LambdaServerlessFunction =
+                &resource.type_
+            {
+                if let Some(properties) = &resource.properties {
+                     if properties.contains_key("VpcConfig") {
+                        vpc_lambda_found = true;
+                        violation_candidates.push(key);
+                     }
+                }
+            }
+        }
+
+        if !vpc_lambda_found {
+            return;
+        }
+
+        // Now check if there are any Gateway Endpoints for S3 or DynamoDB
+        let mut endpoints_found = false;
+        for resource in resources.values() {
+             if let AWSResourceType::EC2VPCEndpoint = &resource.type_ {
+                 if let Some(properties) = &resource.properties {
+                     let service_name = properties
+                        .get("ServiceName")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("");
+                     
+                     let type_ = properties
+                        .get("VpcEndpointType")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("Gateway"); 
+
+                     if (service_name.contains("s3") || service_name.contains("dynamodb")) 
+                        && type_ == "Gateway" {
+                         endpoints_found = true;
+                         break;
+                     }
+                 }
+             }
+        }
+
+        if !endpoints_found {
+            // Updated to be a warning / acknowledgement of cross-stack resources
+            for key in violation_candidates {
+                error_reporter.add_error(
+                    Box::new(LambdaViolation::NoVPCGatewayEndpoint),
+                    key,
+                    line_marker
+                        .get_resource_span(vec![key, "Properties", "VpcConfig"])
+                        .copied(),
+                );
+            }
+        }
+    }
+}
+
+// LAMBDA-009: Check for Static Provisioned Concurrency without AutoScaling
+pub fn check_lambda_provisioned_concurrency_autoscaling<L: LineMarker>(
+    cloudformation: &CloudFormation,
+    error_reporter: &mut ErrorReporter,
+    line_marker: &L,
+) {
+     if let Some(resources) = &cloudformation.resources {
+        // Find Lambdas/Aliases with ProvisionedConcurrency > 0
+        let mut static_provisioning = Vec::new();
+
+        for (key, resource) in resources {
+             if let AWSResourceType::LambdaFunction | AWSResourceType::LambdaServerlessFunction =
+                &resource.type_
+             {
+                 if let Some(properties) = &resource.properties {
+                     if let Some(conf) = properties.get("ProvisionedConcurrencyConfig") {
+                         if let Some(val) = conf.get("ProvisionedConcurrentExecutions") {
+                             if val.as_u64().unwrap_or(0) > 0 {
+                                 static_provisioning.push(key);
+                             }
+                         }
+                     }
+                 }
+             }
+        }
+
+        // Find ScalableTargets for Lambda ProvisionedConcurrency
+        let mut scaled_resource_ids = Vec::new();
+        for resource in resources.values() {
+             if let AWSResourceType::ApplicationAutoScalingScalableTarget = &resource.type_ {
+                 if let Some(properties) = &resource.properties {
+                     let dimension = properties
+                        .get("ScalableDimension")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("");
+                     
+                     if dimension == "lambda:function:ProvisionedConcurrency" {
+                         if let Some(resource_id) = properties.get("ResourceId") {
+                             match resource_id {
+                                 serde_yaml::Value::String(s) => {
+                                     scaled_resource_ids.push(s.clone());
+                                 }
+                                 serde_yaml::Value::Tagged(tagged) => {
+                                     if tagged.tag.to_string() == "!Sub" {
+                                          if let serde_yaml::Value::String(s) = &tagged.value {
+                                              scaled_resource_ids.push(s.clone());
+                                          } else if let serde_yaml::Value::Sequence(seq) = &tagged.value {
+                                              if let Some(serde_yaml::Value::String(s)) = seq.first() {
+                                                  scaled_resource_ids.push(s.clone());
+                                              }
+                                          }
+                                     }
+                                 }
+                                 _ => {}
+                             }
+                         }
+                     }
+                 }
+             }
+        }
+
+        for key in static_provisioning {
+            // Check if the Lambda's Logical ID (key) is referenced in any ScalableTarget's ResourceId.
+            // This handles:
+            // - !Sub "function:${MyLambda}:provisioned" (contains "MyLambda")
+            // - "function:MyLambda:provisioned" (contains "MyLambda")
+            let is_scaled = scaled_resource_ids.iter().any(|rid| rid.contains(key));
+
+            if !is_scaled {
+                 error_reporter.add_error(
+                    Box::new(LambdaViolation::StaticProvisionedConcurrencyWithoutAutoScaling),
+                    key,
+                    line_marker
+                        .get_resource_span(vec![key, "Properties", "ProvisionedConcurrencyConfig"])
+                        .copied(),
+                );
+            }
+        }
+    }
+}

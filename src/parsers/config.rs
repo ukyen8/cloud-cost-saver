@@ -1,4 +1,5 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
+use serde::ser::SerializeMap;
 use std::collections::HashMap;
 use std::fs;
 use std::hash::Hash;
@@ -10,13 +11,14 @@ pub struct RuleTypeConfig {
     pub config_detail: RuleTypeConfigDetail,
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[serde(untagged)]
 pub enum ThresholdValue {
     Int(u64),
     Float(f64),
 }
 
-#[derive(Debug, Serialize, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum RuleTypeConfigDetail {
     Value { value: String },
     Values { values: Vec<String> },
@@ -58,6 +60,35 @@ impl<'de> Deserialize<'de> for RuleTypeConfigDetail {
         }
 
         Ok(RuleTypeConfigDetail::Simple)
+    }
+}
+
+impl Serialize for RuleTypeConfigDetail {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            RuleTypeConfigDetail::Simple => {
+                let map = serializer.serialize_map(Some(0))?;
+                map.end()
+            }
+            RuleTypeConfigDetail::Value { value } => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("value", value)?;
+                map.end()
+            }
+            RuleTypeConfigDetail::Values { values } => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("values", values)?;
+                map.end()
+            }
+            RuleTypeConfigDetail::Threshold { threshold } => {
+                let mut map = serializer.serialize_map(Some(1))?;
+                map.serialize_entry("threshold", threshold)?;
+                map.end()
+            }
+        }
     }
 }
 
@@ -109,15 +140,30 @@ pub enum RuleType {
     LAMBDA_005,
     LAMBDA_006,
     LAMBDA_007,
+
+    LAMBDA_008,
+    LAMBDA_009,
     CW_001,
     CW_002,
     CW_003,
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone, Copy, clap::ValueEnum)]
+#[serde(rename_all = "lowercase")]
+pub enum Preset {
+    Minimal,
+    Recommended,
+    Strict,
+}
+
+
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RuleConfig {
     pub rules: HashMap<RuleType, RuleTypeConfig>,
     pub environments: HashMap<String, Option<HashMap<RuleType, RuleTypeConfig>>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub preset: Option<Preset>,
 }
 
 impl RuleConfig {
@@ -139,7 +185,96 @@ impl RuleConfig {
             .and_then(|rules| rules.as_ref())
             .and_then(|rules| rules.get(&rule))
     }
+
+    pub fn apply_preset(&mut self, preset: Preset) {
+        self.preset = Some(preset);
+        let mut new_rules = HashMap::new();
+
+
+        // Helper to enable a rule simply
+        let enable = |enabled: bool| RuleTypeConfig {
+            enabled,
+            config_detail: RuleTypeConfigDetail::Simple,
+        };
+
+        match preset {
+            Preset::Minimal => {
+                // Critical only
+                new_rules.insert(RuleType::LAMBDA_001, enable(true)); // Log retention missing
+                new_rules.insert(RuleType::LAMBDA_004, RuleTypeConfig { // Async retries
+                    enabled: true,
+                    config_detail: RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Int(0) },
+                });
+                new_rules.insert(RuleType::LAMBDA_009, enable(true)); // Static concurrency
+                new_rules.insert(RuleType::CW_002, enable(true)); // No retention policy
+                
+                // Explicitly disable others commonly on by default
+                new_rules.insert(RuleType::LAMBDA_006, enable(false));
+                new_rules.insert(RuleType::LAMBDA_008, enable(false));
+                new_rules.insert(RuleType::CW_001, RuleTypeConfig {
+                     enabled: false,
+                     config_detail: RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Int(30) },
+                });
+            }
+            Preset::Recommended => {
+                // Minimal + High Value rules (Default-ish)
+                new_rules.insert(RuleType::LAMBDA_001, enable(true));
+                new_rules.insert(RuleType::LAMBDA_004, RuleTypeConfig {
+                    enabled: true,
+                    config_detail: RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Int(0) },
+                });
+                new_rules.insert(RuleType::LAMBDA_006, enable(true));
+                new_rules.insert(RuleType::LAMBDA_008, enable(true));
+                new_rules.insert(RuleType::LAMBDA_009, enable(true));
+                new_rules.insert(RuleType::CW_001, RuleTypeConfig {
+                     enabled: true,
+                     config_detail: RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Int(30) },
+                });
+                new_rules.insert(RuleType::CW_002, enable(true));
+            }
+            Preset::Strict => {
+                // Everything enabled
+                new_rules.insert(RuleType::LAMBDA_001, enable(true));
+                new_rules.insert(RuleType::LAMBDA_002, enable(true)); // ARM
+                new_rules.insert(RuleType::LAMBDA_003, RuleTypeConfig { // Tags
+                    enabled: true,
+                    config_detail: RuleTypeConfigDetail::Values { values: vec!["CostCenter".to_string()] },
+                });
+                new_rules.insert(RuleType::LAMBDA_004, RuleTypeConfig {
+                    enabled: true,
+                    config_detail: RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Int(0) },
+                });
+                new_rules.insert(RuleType::LAMBDA_005, RuleTypeConfig {
+                    enabled: true,
+                    config_detail: RuleTypeConfigDetail::Value { value: "INFO".to_string() },
+                });
+                new_rules.insert(RuleType::LAMBDA_006, enable(true));
+                new_rules.insert(RuleType::LAMBDA_007, RuleTypeConfig {
+                     enabled: true,
+                     config_detail: RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Float(0.1) },
+                });
+                new_rules.insert(RuleType::LAMBDA_008, enable(true));
+                new_rules.insert(RuleType::LAMBDA_009, enable(true));
+                new_rules.insert(RuleType::CW_001, RuleTypeConfig {
+                     enabled: true,
+                     config_detail: RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Int(14) },
+                });
+                new_rules.insert(RuleType::CW_002, enable(true));
+                new_rules.insert(RuleType::CW_003, enable(true));
+            }
+        }
+
+        // Apply new rules, merging with existing ones
+        for (key, val) in new_rules {
+            self.rules.insert(key.clone(), val.clone());
+            // Also update all environments to ensure consistency
+            for env_rules in self.environments.values_mut().flatten() {
+                env_rules.insert(key.clone(), val.clone());
+            }
+        }
+    }
 }
+
 
 impl Default for RuleConfig {
     fn default() -> Self {
@@ -201,6 +336,21 @@ impl Default for RuleConfig {
                 },
             },
         );
+
+        rules.insert(
+            RuleType::LAMBDA_008,
+            RuleTypeConfig {
+                enabled: true,
+                config_detail: RuleTypeConfigDetail::Simple,
+            },
+        );
+        rules.insert(
+            RuleType::LAMBDA_009,
+            RuleTypeConfig {
+                enabled: true,
+                config_detail: RuleTypeConfigDetail::Simple,
+            },
+        );
         rules.insert(
             RuleType::CW_001,
             RuleTypeConfig {
@@ -230,6 +380,7 @@ impl Default for RuleConfig {
         RuleConfig {
             rules,
             environments,
+            preset: None,
         }
     }
 }
@@ -252,6 +403,11 @@ impl Config {
                 .rules
                 .entry(rule_name)
                 .or_insert(default_rule);
+        }
+
+        // Apply preset if defined in config
+        if let Some(preset) = config.cloudformation.preset {
+            config.cloudformation.apply_preset(preset);
         }
 
         // Create `default` environment
