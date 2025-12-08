@@ -269,6 +269,8 @@ pub struct Resource {
 pub enum AWSResourceType {
     LambdaFunction,
     LambdaServerlessFunction,
+    EC2VPCEndpoint,
+    ApplicationAutoScalingScalableTarget,
     CloudWatch,
     Unknown(String),
 }
@@ -282,6 +284,10 @@ impl<'de> Deserialize<'de> for AWSResourceType {
         let resource_type = match cfn_type.to_uppercase().as_str() {
             "AWS::LAMBDA::FUNCTION" => Self::LambdaFunction,
             "AWS::SERVERLESS::FUNCTION" => Self::LambdaServerlessFunction,
+            "AWS::EC2::VPCENDPOINT" => Self::EC2VPCEndpoint,
+            "AWS::APPLICATIONAUTOSCALING::SCALABLETARGET" => {
+                Self::ApplicationAutoScalingScalableTarget
+            }
             "AWS::LOGS::LOGGROUP" => Self::CloudWatch,
             _ => Self::Unknown(cfn_type),
         };

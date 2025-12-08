@@ -68,4 +68,38 @@ impl ErrorReporter {
             .collect::<Vec<String>>()
             .join("\n")
     }
+
+    pub fn render_json(&self) -> String {
+        use serde::Serialize;
+
+        #[derive(Serialize)]
+        struct JsonErrorDetail {
+            code: String,
+            message: String,
+            resource: String,
+            file: String,
+            line: Option<usize>,
+        }
+
+        let json_errors: Vec<JsonErrorDetail> = self
+            .errors
+            .iter()
+            .map(|e| {
+                let line = e
+                    .span
+                    .as_ref()
+                    .and_then(|s| s.start())
+                    .map(|p| p.line() - 1);
+                JsonErrorDetail {
+                    code: e.violation.code(),
+                    message: e.violation.message(),
+                    resource: e.resource_name.clone(),
+                    file: self.file_path.clone(),
+                    line,
+                }
+            })
+            .collect();
+
+        serde_json::to_string_pretty(&json_errors).unwrap_or_else(|_| "[]".to_string())
+    }
 }
