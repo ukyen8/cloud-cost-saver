@@ -285,7 +285,9 @@ impl<'de> Deserialize<'de> for AWSResourceType {
             "AWS::LAMBDA::FUNCTION" => Self::LambdaFunction,
             "AWS::SERVERLESS::FUNCTION" => Self::LambdaServerlessFunction,
             "AWS::EC2::VPCENDPOINT" => Self::EC2VPCEndpoint,
-            "AWS::APPLICATIONAUTOSCALING::SCALABLETARGET" => Self::ApplicationAutoScalingScalableTarget,
+            "AWS::APPLICATIONAUTOSCALING::SCALABLETARGET" => {
+                Self::ApplicationAutoScalingScalableTarget
+            }
             "AWS::LOGS::LOGGROUP" => Self::CloudWatch,
             _ => Self::Unknown(cfn_type),
         };

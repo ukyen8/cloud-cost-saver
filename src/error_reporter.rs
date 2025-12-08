@@ -85,7 +85,11 @@ impl ErrorReporter {
             .errors
             .iter()
             .map(|e| {
-                let line = e.span.as_ref().and_then(|s| s.start()).map(|p| p.line() - 1);
+                let line = e
+                    .span
+                    .as_ref()
+                    .and_then(|s| s.start())
+                    .map(|p| p.line() - 1);
                 JsonErrorDetail {
                     code: e.violation.code(),
                     message: e.violation.message(),

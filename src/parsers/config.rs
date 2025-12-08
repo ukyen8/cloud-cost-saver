@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize, Serializer};
 use serde::ser::SerializeMap;
+use serde::{Deserialize, Serialize, Serializer};
 use std::collections::HashMap;
 use std::fs;
 use std::hash::Hash;
@@ -156,8 +156,6 @@ pub enum Preset {
     Strict,
 }
 
-
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RuleConfig {
     pub rules: HashMap<RuleType, RuleTypeConfig>,
@@ -190,7 +188,6 @@ impl RuleConfig {
         self.preset = Some(preset);
         let mut new_rules = HashMap::new();
 
-
         // Helper to enable a rule simply
         let enable = |enabled: bool| RuleTypeConfig {
             enabled,
@@ -201,64 +198,111 @@ impl RuleConfig {
             Preset::Minimal => {
                 // Critical only
                 new_rules.insert(RuleType::LAMBDA_001, enable(true)); // Log retention missing
-                new_rules.insert(RuleType::LAMBDA_004, RuleTypeConfig { // Async retries
-                    enabled: true,
-                    config_detail: RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Int(0) },
-                });
+                new_rules.insert(
+                    RuleType::LAMBDA_004,
+                    RuleTypeConfig {
+                        // Async retries
+                        enabled: true,
+                        config_detail: RuleTypeConfigDetail::Threshold {
+                            threshold: ThresholdValue::Int(0),
+                        },
+                    },
+                );
                 new_rules.insert(RuleType::LAMBDA_009, enable(true)); // Static concurrency
                 new_rules.insert(RuleType::CW_002, enable(true)); // No retention policy
-                
+
                 // Explicitly disable others commonly on by default
                 new_rules.insert(RuleType::LAMBDA_006, enable(false));
                 new_rules.insert(RuleType::LAMBDA_008, enable(false));
-                new_rules.insert(RuleType::CW_001, RuleTypeConfig {
-                     enabled: false,
-                     config_detail: RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Int(30) },
-                });
+                new_rules.insert(
+                    RuleType::CW_001,
+                    RuleTypeConfig {
+                        enabled: false,
+                        config_detail: RuleTypeConfigDetail::Threshold {
+                            threshold: ThresholdValue::Int(30),
+                        },
+                    },
+                );
             }
             Preset::Recommended => {
                 // Minimal + High Value rules (Default-ish)
                 new_rules.insert(RuleType::LAMBDA_001, enable(true));
-                new_rules.insert(RuleType::LAMBDA_004, RuleTypeConfig {
-                    enabled: true,
-                    config_detail: RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Int(0) },
-                });
+                new_rules.insert(
+                    RuleType::LAMBDA_004,
+                    RuleTypeConfig {
+                        enabled: true,
+                        config_detail: RuleTypeConfigDetail::Threshold {
+                            threshold: ThresholdValue::Int(0),
+                        },
+                    },
+                );
                 new_rules.insert(RuleType::LAMBDA_006, enable(true));
                 new_rules.insert(RuleType::LAMBDA_008, enable(true));
                 new_rules.insert(RuleType::LAMBDA_009, enable(true));
-                new_rules.insert(RuleType::CW_001, RuleTypeConfig {
-                     enabled: true,
-                     config_detail: RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Int(30) },
-                });
+                new_rules.insert(
+                    RuleType::CW_001,
+                    RuleTypeConfig {
+                        enabled: true,
+                        config_detail: RuleTypeConfigDetail::Threshold {
+                            threshold: ThresholdValue::Int(30),
+                        },
+                    },
+                );
                 new_rules.insert(RuleType::CW_002, enable(true));
             }
             Preset::Strict => {
                 // Everything enabled
                 new_rules.insert(RuleType::LAMBDA_001, enable(true));
                 new_rules.insert(RuleType::LAMBDA_002, enable(true)); // ARM
-                new_rules.insert(RuleType::LAMBDA_003, RuleTypeConfig { // Tags
-                    enabled: true,
-                    config_detail: RuleTypeConfigDetail::Values { values: vec!["CostCenter".to_string()] },
-                });
-                new_rules.insert(RuleType::LAMBDA_004, RuleTypeConfig {
-                    enabled: true,
-                    config_detail: RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Int(0) },
-                });
-                new_rules.insert(RuleType::LAMBDA_005, RuleTypeConfig {
-                    enabled: true,
-                    config_detail: RuleTypeConfigDetail::Value { value: "INFO".to_string() },
-                });
+                new_rules.insert(
+                    RuleType::LAMBDA_003,
+                    RuleTypeConfig {
+                        // Tags
+                        enabled: true,
+                        config_detail: RuleTypeConfigDetail::Values {
+                            values: vec!["CostCenter".to_string()],
+                        },
+                    },
+                );
+                new_rules.insert(
+                    RuleType::LAMBDA_004,
+                    RuleTypeConfig {
+                        enabled: true,
+                        config_detail: RuleTypeConfigDetail::Threshold {
+                            threshold: ThresholdValue::Int(0),
+                        },
+                    },
+                );
+                new_rules.insert(
+                    RuleType::LAMBDA_005,
+                    RuleTypeConfig {
+                        enabled: true,
+                        config_detail: RuleTypeConfigDetail::Value {
+                            value: "INFO".to_string(),
+                        },
+                    },
+                );
                 new_rules.insert(RuleType::LAMBDA_006, enable(true));
-                new_rules.insert(RuleType::LAMBDA_007, RuleTypeConfig {
-                     enabled: true,
-                     config_detail: RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Float(0.1) },
-                });
+                new_rules.insert(
+                    RuleType::LAMBDA_007,
+                    RuleTypeConfig {
+                        enabled: true,
+                        config_detail: RuleTypeConfigDetail::Threshold {
+                            threshold: ThresholdValue::Float(0.1),
+                        },
+                    },
+                );
                 new_rules.insert(RuleType::LAMBDA_008, enable(true));
                 new_rules.insert(RuleType::LAMBDA_009, enable(true));
-                new_rules.insert(RuleType::CW_001, RuleTypeConfig {
-                     enabled: true,
-                     config_detail: RuleTypeConfigDetail::Threshold { threshold: ThresholdValue::Int(14) },
-                });
+                new_rules.insert(
+                    RuleType::CW_001,
+                    RuleTypeConfig {
+                        enabled: true,
+                        config_detail: RuleTypeConfigDetail::Threshold {
+                            threshold: ThresholdValue::Int(14),
+                        },
+                    },
+                );
                 new_rules.insert(RuleType::CW_002, enable(true));
                 new_rules.insert(RuleType::CW_003, enable(true));
             }
@@ -274,7 +318,6 @@ impl RuleConfig {
         }
     }
 }
-
 
 impl Default for RuleConfig {
     fn default() -> Self {

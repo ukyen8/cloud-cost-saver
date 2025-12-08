@@ -8,7 +8,7 @@ mod error_reporter;
 mod parsers;
 mod rules;
 use crate::parsers::cfn::{parse_cloudformation, parse_samconfig};
-use clap::{Parser, Subcommand, CommandFactory};
+use clap::{CommandFactory, Parser, Subcommand};
 use dialoguer::Confirm;
 use std::fs;
 
@@ -75,15 +75,19 @@ fn run_init() -> ExitCode {
         .default(false)
         .interact()
         .unwrap();
-    
+
     // We can now use presets for init too!
-    let preset = if strict_mode { Some(crate::parsers::config::Preset::Strict) } else { Some(crate::parsers::config::Preset::Recommended) };
+    let preset = if strict_mode {
+        Some(crate::parsers::config::Preset::Strict)
+    } else {
+        Some(crate::parsers::config::Preset::Recommended)
+    };
 
     let mut rule_config = RuleConfig::default();
     if let Some(p) = preset {
         rule_config.apply_preset(p);
     }
-    
+
     // Default environment always created with empty overrides (inherits base rules)
     rule_config.environments.insert("default".to_string(), None);
 
@@ -111,12 +115,12 @@ fn run_scan(args: ScanArgs) -> ExitCode {
         eprintln!("Failed to load config: {e}");
         std::process::exit(1);
     });
-    
+
     // CLI override for preset
     if let Some(preset) = args.preset {
         config.cloudformation.apply_preset(preset);
     }
-    
+
     let environment = args.environment;
     let mut error_reporter = error_reporter::ErrorReporter::new(&template_file);
 

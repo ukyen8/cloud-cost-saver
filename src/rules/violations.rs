@@ -77,7 +77,9 @@ impl Violation for LambdaViolation {
             LambdaViolation::PowertoolsLoggerSampleRate => "LAMBDA-007".to_string(),
 
             LambdaViolation::NoVPCGatewayEndpoint => "LAMBDA-008".to_string(),
-            LambdaViolation::StaticProvisionedConcurrencyWithoutAutoScaling => "LAMBDA-009".to_string(),
+            LambdaViolation::StaticProvisionedConcurrencyWithoutAutoScaling => {
+                "LAMBDA-009".to_string()
+            }
         }
     }
 }

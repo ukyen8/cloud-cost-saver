@@ -98,8 +98,6 @@ impl<'a, L: LineMarker + 'a> Checker<'a, L> {
             );
         }
 
-
-
         if rule_config.enabled(RuleType::LAMBDA_008, self.environment) {
             aws::lambda::check_lambda_vpc_gateway_endpoints(
                 self.cloudformation,
@@ -415,8 +413,6 @@ mod tests_cfn {
             expected.assert_all_match(&context.error_reporter.render_errors());
         }
 
-
-
         #[rstest]
         #[case(
             "cfn-advanced-cost.yaml",
@@ -435,10 +431,8 @@ mod tests_cfn {
             let mut checker = context.create_checker();
             checker.run_checks();
 
-            let expected = ExpectedViolations::new(vec![ExpectedViolation::new(
-                &violation,
-                "MyVPCLambda",
-            )]);
+            let expected =
+                ExpectedViolations::new(vec![ExpectedViolation::new(&violation, "MyVPCLambda")]);
             expected.assert_all_match(&context.error_reporter.render_errors());
         }
 
@@ -475,17 +469,17 @@ mod tests_cfn {
             setup_checker: impl Fn(&str, RuleType, Option<RuleTypeConfigDetail>) -> TestContext,
         ) {
             // Need a slight variance of setup_checker to apply preset
-            let mut context = setup_checker(template_name, RuleType::LAMBDA_001, None); 
+            let mut context = setup_checker(template_name, RuleType::LAMBDA_001, None);
             // Apply preset to config manually since setup_checker is rigid
             context.config.cloudformation.apply_preset(preset);
-            
+
             let mut checker = context.create_checker();
             checker.run_checks();
 
             // Minimal should NOT catch Missing Tags (LAMBDA-003) or Event Filtering (LAMBDA-008)
             // It SHOULD catch Static Concurrency (LAMBDA-009)
             let errors = context.error_reporter.render_errors();
-            
+
             assert!(!errors.contains("LAMBDA-003"));
             assert!(errors.contains("LAMBDA-009"));
         }
@@ -499,7 +493,7 @@ mod tests_cfn {
         ) {
             let mut context = setup_checker(template_name, RuleType::LAMBDA_001, None);
             context.config.cloudformation.apply_preset(preset);
-            
+
             let mut checker = context.create_checker();
             checker.run_checks();
 
@@ -513,5 +507,3 @@ mod tests_cfn {
         }
     }
 }
-
-
