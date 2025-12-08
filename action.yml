@@ -15,16 +15,14 @@ inputs:
   config:
     description: "Path to the Cloud Cost Saver configuration file"
     required: true
-    default: "./cloudsaving.yaml"
+  preset:
+    description: "Configuration preset (minimal, recommended, strict)"
+    required: false
+  format:
+    description: "Output format (text, json)"
+    required: false
+    default: "text"
 runs:
   using: "docker"
   image: "Dockerfile"
-  args:
-    - "--template"
-    - "${{ inputs.template }}"
-    - "--environment"
-    - "${{ inputs.environment }}"
-    - "--samconfig"
-    - "${{ inputs.samconfig }}"
-    - "--config"
-    - "${{ inputs.config }}"
+

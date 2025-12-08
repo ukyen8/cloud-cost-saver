@@ -186,7 +186,6 @@ Add the following step to your workflow YAML (e.g., `.github/workflows/cloud_cos
     environment: default
     samconfig: src/fixtures/aws/samconfig.toml
     config: src/fixtures/cloudsaving.yaml
-    cloud_provider: aws
 ```
 
 ### Inputs
@@ -197,6 +196,8 @@ Add the following step to your workflow YAML (e.g., `.github/workflows/cloud_cos
 | environment    | Environment name for rule overrides (from config)        | No       | default                                      |
 | samconfig      | Path to your AWS SAM config file                         | No       | src/fixtures/aws/samconfig.toml               |
 | config         | Path to the Cloud Cost Saver configuration file          | No       | src/fixtures/cloudsaving.yaml                 |
+| preset         | Configuration preset (minimal, recommended, strict)      | No       | recommended                                  |
+| format         | Output format (text, json)                               | No       | text                                         |
 
 ### Example Workflow
 

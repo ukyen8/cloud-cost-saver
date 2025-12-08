@@ -402,7 +402,7 @@ pub fn check_lambda_provisioned_concurrency_autoscaling<L: LineMarker>(
                                     scaled_resource_ids.push(s.clone());
                                 }
                                 serde_yaml::Value::Tagged(tagged) => {
-                                    if tagged.tag.to_string() == "!Sub" {
+                                    if tagged.tag == "!Sub" {
                                         if let serde_yaml::Value::String(s) = &tagged.value {
                                             scaled_resource_ids.push(s.clone());
                                         } else if let serde_yaml::Value::Sequence(seq) =
