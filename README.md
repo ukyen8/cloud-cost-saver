@@ -22,33 +22,10 @@ cd cloud-cost-saver
 
 ## Usage
 
-### interactive Initialization (New)
-To quickly set up a configuration file, use the `init` command:
+To analyze a CloudFormation template, use the following command:
 
 ```sh
-cargo run -- init
-```
-
-### Scan a Template
-To analyze a CloudFormation template, use the `scan` command:
-
-```sh
-cargo run -- scan --template src/fixtures/aws/cfn-testing.yaml --environment default --samconfig src/fixtures/aws/samconfig.toml --config cloudsaving.yaml
-```
-
-You can also output the results in JSON format:
-
-```sh
-cargo run -- scan --template src/fixtures/aws/cfn-testing.yaml --format json
-```
-
-
-
-### Configuration Presets
-You can apply `minimal`, `recommended`, or `strict` rule sets using the `--preset` flag:
-
-```sh
-cargo run -- scan --template src/fixtures/aws/cfn-testing.yaml --preset strict
+cargo run -- --template src/fixtures/aws/cfn-testing.yaml --environment default --samconfig src/fixtures/aws/samconfig.toml --config cloudsaving.yaml
 ```
 
 ## Example Output
@@ -82,8 +59,6 @@ This section lists the various violations that this tool can detect in AWS Cloud
 | LAMBDA-005 | Set the POWERTOOLS_LOG_LEVEL environment variable to appropriate logging levels for different environments when using AWS Lambda Powertools. This helps in reducing logging costs. | false |
 | LAMBDA-006 | Logging every incoming event may significantly increase cloud costs. Consider disabling POWERTOOLS_LOGGER_LOG_EVENT in the production environment to help reduce logging expenses. | true |
 | LAMBDA-007 | Set the POWERTOOLS_LOGGER_SAMPLE_RATE environment variable to a value between 0 and 1 to sample logs and reduce logging costs when using AWS Lambda Powertools. | false |
-| LAMBDA-008 | Ensure Lambda functions in a VPC have compatible Gateway Endpoints (S3/DynamoDB) to avoid expensive NAT Gateway data processing charges. | true |
-| LAMBDA-009 | Detect Static Provisioned Concurrency without AutoScaling. Suggests using Application Auto Scaling to optimize costs during low-traffic periods. | true |
 
 #### CloudWatch
 
@@ -163,8 +138,6 @@ The `cloudsaving.yaml` file allows you to customize the behavior of the Cloud Co
 | LAMBDA_005 | Value              | POWERTOOLS_LOG_LEVEL value |
 | LAMBDA_006 | Simple             | Enable to check if POWERTOOLS_LOGGER_LOG_EVENT is set to false |
 | LAMBDA_007 | Threshold          | Set sample rate with POWERTOOLS_LOGGER_SAMPLE_RATE |
-| LAMBDA_008 | Simple             | Enabled or not |
-| LAMBDA_009 | Simple             | Enabled or not |
 | CW_001     | Threshold          | Log retention period in days |
 | CW_002     | Simple             | Enabled or not |
 | CW_003     | Simple             | Enabled or not |
@@ -186,6 +159,7 @@ Add the following step to your workflow YAML (e.g., `.github/workflows/cloud_cos
     environment: default
     samconfig: src/fixtures/aws/samconfig.toml
     config: src/fixtures/cloudsaving.yaml
+    cloud_provider: aws
 ```
 
 ### Inputs
@@ -196,8 +170,6 @@ Add the following step to your workflow YAML (e.g., `.github/workflows/cloud_cos
 | environment    | Environment name for rule overrides (from config)        | No       | default                                      |
 | samconfig      | Path to your AWS SAM config file                         | No       | src/fixtures/aws/samconfig.toml               |
 | config         | Path to the Cloud Cost Saver configuration file          | No       | src/fixtures/cloudsaving.yaml                 |
-| preset         | Configuration preset (minimal, recommended, strict)      | No       | recommended                                  |
-| format         | Output format (text, json)                               | No       | text                                         |
 
 ### Example Workflow
 

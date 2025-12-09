@@ -15,9 +15,5 @@ RUN apt-get update && apt-get install -y \
 # Build the project
 RUN cargo build --release
 
-# Copy the entrypoint script
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
-
-# Set the entrypoint to the script
-ENTRYPOINT ["/entrypoint.sh"]
+# Set the entrypoint to the built binary
+ENTRYPOINT ["/usr/src/app/target/release/ccs"]

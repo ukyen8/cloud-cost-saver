@@ -15,9 +15,6 @@ pub enum LambdaViolation {
     PowertoolsLogLevel,
     PowertoolsLoggerLogEvent,
     PowertoolsLoggerSampleRate,
-
-    NoVPCGatewayEndpoint,
-    StaticProvisionedConcurrencyWithoutAutoScaling,
 }
 
 impl Violation for LambdaViolation {
@@ -54,15 +51,6 @@ impl Violation for LambdaViolation {
                 "Set the POWERTOOLS_LOGGER_SAMPLE_RATE environment variable to a value between 0 and 1 \
                 to sample logs and reduce logging costs when using AWS Lambda Powertools.".to_string()
             }
-
-            LambdaViolation::NoVPCGatewayEndpoint => {
-                "Lambda function is in a VPC but no compatible Gateway Endpoint (S3/DynamoDB) was found in THIS template. \
-                Verify that S3/DynamoDB Gateway Endpoints are configured (possibly in another stack) to avoid NAT Gateway charges.".to_string()
-            }
-            LambdaViolation::StaticProvisionedConcurrencyWithoutAutoScaling => {
-                "Static Provisioned Concurrency detected. Consider using Application Auto Scaling \
-                to optimize costs by scheduling concurrency or scaling based on utilization.".to_string()
-            }
         }
     }
 
@@ -75,11 +63,6 @@ impl Violation for LambdaViolation {
             LambdaViolation::PowertoolsLogLevel => "LAMBDA-005".to_string(),
             LambdaViolation::PowertoolsLoggerLogEvent => "LAMBDA-006".to_string(),
             LambdaViolation::PowertoolsLoggerSampleRate => "LAMBDA-007".to_string(),
-
-            LambdaViolation::NoVPCGatewayEndpoint => "LAMBDA-008".to_string(),
-            LambdaViolation::StaticProvisionedConcurrencyWithoutAutoScaling => {
-                "LAMBDA-009".to_string()
-            }
         }
     }
 }
