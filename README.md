@@ -22,18 +22,11 @@ cd cloud-cost-saver
 
 ## Usage
 
-### interactive Initialization (New)
-To quickly set up a configuration file, use the `init` command:
-
-```sh
-cargo run -- init
-```
-
 ### Scan a Template
 To analyze a CloudFormation template, use the `scan` command:
 
 ```sh
-cargo run -- scan --template src/fixtures/aws/cfn-testing.yaml --environment default --samconfig src/fixtures/aws/samconfig.toml --config cloudsaving.yaml
+cargo run -- scan --template src/fixtures/aws/cfn-testing.yaml --environment default --samconfig src/fixtures/aws/samconfig.toml
 ```
 
 You can also output the results in JSON format:
@@ -42,13 +35,11 @@ You can also output the results in JSON format:
 cargo run -- scan --template src/fixtures/aws/cfn-testing.yaml --format json
 ```
 
-
-
-### Configuration Presets
-You can apply `minimal`, `recommended`, or `strict` rule sets using the `--preset` flag:
+### HTML Reporting
+Generate a detailed HTML report categorized by resource type:
 
 ```sh
-cargo run -- scan --template src/fixtures/aws/cfn-testing.yaml --preset strict
+cargo run -- scan --template src/fixtures/aws/cfn-testing.yaml --format html > report.html
 ```
 
 ## Example Output
@@ -70,105 +61,28 @@ In this output:
 
 ### AWS CloudFormation
 
-This section lists the various violations that this tool can detect in AWS CloudFormation templates. Each violation is identified by an error code and includes a description of the issue and whether it is enabled by default.
+This section lists the various violations that this tool can detect in AWS CloudFormation templates. By default, all rules are enabled.
 
 #### Lambda
-| Error Code | Description | Default enabled |
-|------------|-------------|-----------------|
-| LAMBDA-001 | Lambda function creates a log group automatically when invoked for the first time with no expiry Please explicitly create a log group with a retention policy.| true |
-| LAMBDA-002 | Consider using ARM architecture. Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions. | false |
-| LAMBDA-003 | The Lambda function is missing a tag. Tags are useful for budgeting and identifying areas for cost optimization. | false |
-| LAMBDA-004 | Asynchronously invoked Lambda functions have a default maximum retry attempts set to 2. Consider setting the maximum retry attempts to 0 to prevent unnecessary retries. For example, if your Lambda function is invoked via an SQS queue with 3 retries, a failure event may result in up to 9 retries. | true |
-| LAMBDA-005 | Set the POWERTOOLS_LOG_LEVEL environment variable to appropriate logging levels for different environments when using AWS Lambda Powertools. This helps in reducing logging costs. | false |
-| LAMBDA-006 | Logging every incoming event may significantly increase cloud costs. Consider disabling POWERTOOLS_LOGGER_LOG_EVENT in the production environment to help reduce logging expenses. | true |
-| LAMBDA-007 | Set the POWERTOOLS_LOGGER_SAMPLE_RATE environment variable to a value between 0 and 1 to sample logs and reduce logging costs when using AWS Lambda Powertools. | false |
-| LAMBDA-008 | Ensure Lambda functions in a VPC have compatible Gateway Endpoints (S3/DynamoDB) to avoid expensive NAT Gateway data processing charges. | true |
-| LAMBDA-009 | Detect Static Provisioned Concurrency without AutoScaling. Suggests using Application Auto Scaling to optimize costs during low-traffic periods. | true |
+| Error Code | Description |
+|------------|-------------|
+| LAMBDA-001 | Lambda function creates a log group automatically when invoked for the first time with no expiry Please explicitly create a log group with a retention policy.|
+| LAMBDA-002 | Consider using ARM architecture. Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions. |
+| LAMBDA-003 | The Lambda function is missing a tag. Tags are useful for budgeting and identifying areas for cost optimization. |
+| LAMBDA-004 | Asynchronously invoked Lambda functions have a default maximum retry attempts set to 2. Consider setting the maximum retry attempts to 0 to prevent unnecessary retries. For example, if your Lambda function is invoked via an SQS queue with 3 retries, a failure event may result in up to 9 retries. |
+| LAMBDA-005 | Set the POWERTOOLS_LOG_LEVEL environment variable to appropriate logging levels for different environments when using AWS Lambda Powertools. This helps in reducing logging costs. |
+| LAMBDA-006 | Logging every incoming event may significantly increase cloud costs. Consider disabling POWERTOOLS_LOGGER_LOG_EVENT in the production environment to help reduce logging expenses. |
+| LAMBDA-007 | Set the POWERTOOLS_LOGGER_SAMPLE_RATE environment variable to a value between 0 and 1 to sample logs and reduce logging costs when using AWS Lambda Powertools. |
+| LAMBDA-008 | Ensure Lambda functions in a VPC have compatible Gateway Endpoints (S3/DynamoDB) to avoid expensive NAT Gateway data processing charges. |
+| LAMBDA-009 | Detect Static Provisioned Concurrency without AutoScaling. Suggests using Application Auto Scaling to optimize costs during low-traffic periods. |
 
 #### CloudWatch
 
-| Error Code | Description | Default enabled |
-|------------|-------------|-----------------|
-| CW-001 | The log group retention period is too long. Consider reducing it to save costs and improve log management efficiency. | false |
-| CW-002 | The log group has no retention policy. Consider setting a retention policy to save costs and improve log management efficiency. | true |
-| CW-003 | The log group is using STANDARD class. Consider using INFREQUENT_ACCESS to save costs. | false |
-
-## Configuration
-
-### AWS CloudFormation
-
-To configure the Cloud Cost Saver for AWS CloudFormation, create a `cloudsaving.yaml` file in the root of your project. This file should contain the following settings:
-
-```yaml
-cloudformation:
-    rules:
-        LAMBDA_001:
-            enabled: true
-        LAMBDA_002:
-            enabled: true
-        LAMBDA_003:
-            enabled: true
-            values:
-                - tag1
-                - tag2
-        LAMBDA_004:
-            enabled: true
-            threshold: 0
-        LAMBDA_005:
-            enabled: true
-            value: "ERROR"
-        CW_001:
-            enabled: true
-            threshold: 14
-        CW_002:
-            enabled: true
-        CW_003:
-            enabled: false
-    environments:
-        dev:
-        sandbox:
-            LAMBDA_002:
-                enabled: false
-            CW_003:
-                enabled: true
-        prod:
-            LAMBDA_003:
-                enabled: true
-                values:
-                    - tag3
-                    - tag4
-            CW_002:
-                enabled: false
-```
-
-In this configuration:
-- `LAMBDA_001`, `LAMBDA_002`, and `LAMBDA_003` are enabled, with `LAMBDA_003` requiring specific tags (`tag1` and `tag2`) and `LAMBDA_004` with a threshold of 0 for retry attempts.
-- `CW_001` is enabled with a threshold of 14 days for log retention.
-- `CW_002` is enabled to ensure log groups have a retention policy.
-- `CW_003` is disabled, meaning it will not check for the use of the `INFREQUENT_ACCESS` class for log groups.
-- Environments `dev`, `sandbox`, and `prod` are defined with specific rule configurations.
-
-A `default` environment will be automatically created. The rules defined under environments will override the default rules.
-
-### Rules configuration table
-
-The `cloudsaving.yaml` file allows you to customize the behavior of the Cloud Cost Saver tool. The below table lists all the rules configurations, specifying whether they are simple (only need to specify enabled or not), value, values, or threshold.
-
-| Rule Type | Configuration Type | Description |
-|-----------|--------------------|-------------|
-| LAMBDA_001 | Simple             | Enabled or not |
-| LAMBDA_002 | Simple             | Enabled or not |
-| LAMBDA_003 | Values             | List of required tags |
-| LAMBDA_004 | Threshold          | Lambda maximum retry attempts |
-| LAMBDA_005 | Value              | POWERTOOLS_LOG_LEVEL value |
-| LAMBDA_006 | Simple             | Enable to check if POWERTOOLS_LOGGER_LOG_EVENT is set to false |
-| LAMBDA_007 | Threshold          | Set sample rate with POWERTOOLS_LOGGER_SAMPLE_RATE |
-| LAMBDA_008 | Simple             | Enabled or not |
-| LAMBDA_009 | Simple             | Enabled or not |
-| CW_001     | Threshold          | Log retention period in days |
-| CW_002     | Simple             | Enabled or not |
-| CW_003     | Simple             | Enabled or not |
-
+| Error Code | Description |
+|------------|-------------|
+| CW-001 | The log group retention period is too long. Consider reducing it to save costs and improve log management efficiency. |
+| CW-002 | The log group has no retention policy. Consider setting a retention policy to save costs and improve log management efficiency. |
+| CW-003 | The log group is using STANDARD class. Consider using INFREQUENT_ACCESS to save costs. |
 
 ## GitHub Action Usage
 
@@ -185,7 +99,6 @@ Add the following step to your workflow YAML (e.g., `.github/workflows/cloud_cos
     template: src/fixtures/aws/cfn-testing-pass.yaml
     environment: default
     samconfig: src/fixtures/aws/samconfig.toml
-    config: src/fixtures/cloudsaving.yaml
 ```
 
 ### Inputs
@@ -193,11 +106,9 @@ Add the following step to your workflow YAML (e.g., `.github/workflows/cloud_cos
 | Name           | Description                                              | Required | Example                                      |
 |----------------|----------------------------------------------------------|----------|----------------------------------------------|
 | template       | Path to the CloudFormation template to analyze           | Yes      | src/fixtures/aws/cfn-testing-pass.yaml        |
-| environment    | Environment name for rule overrides (from config)        | No       | default                                      |
+| environment    | Environment name for rule overrides                      | No       | default                                      |
 | samconfig      | Path to your AWS SAM config file                         | No       | src/fixtures/aws/samconfig.toml               |
-| config         | Path to the Cloud Cost Saver configuration file          | No       | src/fixtures/cloudsaving.yaml                 |
-| preset         | Configuration preset (minimal, recommended, strict)      | No       | recommended                                  |
-| format         | Output format (text, json)                               | No       | text                                         |
+| format         | Output format (text, json, html)                         | No       | text                                         |
 
 ### Example Workflow
 
@@ -221,7 +132,6 @@ jobs:
           template: src/fixtures/aws/cfn-testing-pass.yaml
           environment: default
           samconfig: src/fixtures/aws/samconfig.toml
-          config: src/fixtures/cloudsaving.yaml
 ```
 
 This will run the Cloud Cost Saver action on every push to `main` and on pull requests, analyzing your CloudFormation template for cost-saving opportunities.

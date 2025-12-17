@@ -12,6 +12,29 @@ pub struct ErrorDetail {
     pub span: Option<Span>,
 }
 
+use askama::Template;
+use std::collections::HashMap;
+
+#[derive(Template)]
+#[template(path = "report.html")]
+struct ReportTemplate {
+    generated_at: String,
+    total_issues: usize,
+    resources: Vec<ResourceGroupView>,
+}
+
+struct ResourceGroupView {
+    name: String,
+    violations: Vec<ViolationView>,
+}
+
+struct ViolationView {
+    code: String,
+    message: String,
+    file: String,
+    line: Option<usize>,
+}
+
 impl ErrorDetail {
     pub fn new(violation: Box<dyn Violation>, resource_name: String, span: Option<Span>) -> Self {
         Self {
@@ -67,6 +90,53 @@ impl ErrorReporter {
             })
             .collect::<Vec<String>>()
             .join("\n")
+    }
+
+    pub fn render_html(&self) -> String {
+        let mut grouped_errors: HashMap<String, Vec<&ErrorDetail>> = HashMap::new();
+
+        for error in &self.errors {
+            grouped_errors
+                .entry(error.resource_name.clone())
+                .or_default()
+                .push(error);
+        }
+
+        let mut resources: Vec<ResourceGroupView> = grouped_errors
+            .into_iter()
+            .map(|(name, errors)| {
+                let mut violations: Vec<ViolationView> = errors
+                    .into_iter()
+                    .map(|e| {
+                        let line = e.span.as_ref().and_then(|s| s.start()).map(|p| p.line());
+                        ViolationView {
+                            code: e.violation.code(),
+                            message: e.violation.message(),
+                            file: self.file_path.clone(),
+                            line,
+                        }
+                    })
+                    .collect();
+
+                // Sort violations by Code
+                violations.sort_by(|a, b| a.code.cmp(&b.code));
+
+                ResourceGroupView { name, violations }
+            })
+            .collect();
+
+        // Sort resources alphabetically
+        resources.sort_by(|a, b| a.name.cmp(&b.name));
+
+        let template = ReportTemplate {
+            generated_at: chrono::Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
+            total_issues: self.errors.len(),
+            resources,
+        };
+
+        template
+            .render()
+            .unwrap_or_else(|e| format!("Error generating report: {}", e))
     }
 
     pub fn render_json(&self) -> String {
