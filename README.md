@@ -1,145 +1,129 @@
 # Cloud Cost Saver
 
-A Rust-based tool for analyzing infrastructure-as-code templates, such as CloudFormation, and providing actionable suggestions to optimize cloud costs.
+A Rust-based tool for analyzing infrastructure-as-code templates (AWS CloudFormation) to identify cost-saving opportunities. It parses your templates, evaluates them against a set of cost optimization rules, and generates actionable reports.
 
-**Note: This project is ongoing and actively developed.**
+> **Note**: This project is actively developed.
 
 ## Features
 
-- Analyze CloudFormation templates
-- Identify cost-saving opportunities
-- Provide actionable suggestions
-- Currently supports AWS CloudFormation
+-   **CloudFormation Analysis**: Deep scanning of `template.yaml` files.
+-   **Multi-Environment Support**: Reads `samconfig.toml` to understand deployment environments (e.g., `default`, `prod`) and evaluates parameter overrides and conditions specific to each environment.
+-   **HTML Reporting**: Generates interactive HTML reports with environment selectors and dynamic issue filtering.
+-   **Strict by Default**: Applies a comprehensive set of rules to catch potential savings.
+-   **Condition Logic**: Supports `!If`, `!Equals`, `!Not`, and `!Ref` conditions to accurately reflect what resources are actually created in each environment.
 
 ## Installation
 
-To install Cloud Cost Saver, clone the repository from GitHub:
+### Option 1: Download Binary
+
+You don't need Rust to use Cloud Cost Saver. Simply download the latest binary for your operating system from the [Releases](https://github.com/ukyen8/cloud-cost-saver/releases) page.
+
+1.  Download the binary/executable.
+2.  Rename it to `ccs` (or `ccs.exe` on Windows).
+3.  Add it to your PATH or run it directly.
+
+```sh
+# Example on macOS/Linux
+./ccs scan -t template.yaml
+```
+
+### Option 2: Build from Source
+
+If you have Rust installed:
 
 ```sh
 git clone https://github.com/yourusername/cloud-cost-saver.git
 cd cloud-cost-saver
+cargo build --release
+# Binary will be in target/release/ccs
 ```
 
 ## Usage
 
-### Scan a Template
-To analyze a CloudFormation template, use the `scan` command:
+CloudSaver scans an AWS CloudFormation template and optional SAM configuration to report violations.
+
+> **Tip**: If you are running from source code, replace `ccs` with `cargo run --` in the examples below.
+
+### Basic Scan
+
+Analyze a template using the `scan` command:
 
 ```sh
-cargo run -- scan --template src/fixtures/aws/cfn-testing.yaml --environment default --samconfig src/fixtures/aws/samconfig.toml
+ccs scan -t template.yaml
 ```
 
-You can also output the results in JSON format:
+### Multi-Environment Scan with HTML Report
+
+To scan all environments defined in your `samconfig.toml` and generate an interactive HTML report:
 
 ```sh
-cargo run -- scan --template src/fixtures/aws/cfn-testing.yaml --format json
+ccs scan \
+  --template src/fixtures/aws/cfn-advanced-cost.yaml \
+  --samconfig src/fixtures/aws/samconfig.toml \
+  --format html > report.html
 ```
 
-### HTML Reporting
-Generate a detailed HTML report categorized by resource type:
+Open `report.html` in your browser to inspect findings across different environments.
 
-```sh
-cargo run -- scan --template src/fixtures/aws/cfn-testing.yaml --format html > report.html
-```
+### CLI Options
 
-## Example Output
-
-When you run the analysis, you might see output similar to the following:
-
-```
-LAMBDA-002: MyLambdaFunction2: Consider using ARM architecture. Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions.
-src/fixtures/aws/cfn-testing.yaml:20
-```
-
-In this output:
-- `LAMBDA-002` is the error code.
-- `MyLambdaFunction2` is the resource name.
-- The text following the resource name is the issue description.
-- `src/fixtures/aws/cfn-testing.yaml:20` is the file path and line number where the issue was found.
+| Option | Short | Description | Default |
+|--------|-------|-------------|---------|
+| `--template` | `-t` | Path to CloudFormation template | **Required** |
+| `--samconfig` | | Path to `samconfig.toml` | None |
+| `--environment` | `-e` | Fallback environment name if no config | `default` |
+| `--format` | | Output format (`text`, `json`, `html`) | `text` |
 
 ## Violations
 
-### AWS CloudFormation
+The following rules are enforced to help validata and optimize costs:
 
-This section lists the various violations that this tool can detect in AWS CloudFormation templates. By default, all rules are enabled.
+### Lambda
 
-#### Lambda
-| Error Code | Description |
-|------------|-------------|
-| LAMBDA-001 | Lambda function creates a log group automatically when invoked for the first time with no expiry Please explicitly create a log group with a retention policy.|
-| LAMBDA-002 | Consider using ARM architecture. Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions. |
-| LAMBDA-003 | The Lambda function is missing a tag. Tags are useful for budgeting and identifying areas for cost optimization. |
-| LAMBDA-004 | Asynchronously invoked Lambda functions have a default maximum retry attempts set to 2. Consider setting the maximum retry attempts to 0 to prevent unnecessary retries. For example, if your Lambda function is invoked via an SQS queue with 3 retries, a failure event may result in up to 9 retries. |
-| LAMBDA-005 | Set the POWERTOOLS_LOG_LEVEL environment variable to appropriate logging levels for different environments when using AWS Lambda Powertools. This helps in reducing logging costs. |
-| LAMBDA-006 | Logging every incoming event may significantly increase cloud costs. Consider disabling POWERTOOLS_LOGGER_LOG_EVENT in the production environment to help reduce logging expenses. |
-| LAMBDA-007 | Set the POWERTOOLS_LOGGER_SAMPLE_RATE environment variable to a value between 0 and 1 to sample logs and reduce logging costs when using AWS Lambda Powertools. |
-| LAMBDA-008 | Ensure Lambda functions in a VPC have compatible Gateway Endpoints (S3/DynamoDB) to avoid expensive NAT Gateway data processing charges. |
-| LAMBDA-009 | Detect Static Provisioned Concurrency without AutoScaling. Suggests using Application Auto Scaling to optimize costs during low-traffic periods. |
+| Code | Description |
+|------|-------------|
+| `LAMBDA-001` | **Log Group Retention**: Ensure Log Groups are explicitly created with a retention policy to avoid infinite storage costs. |
+| `LAMBDA-002` | **Architecture**: Suggests using **ARM64** architecture for up to 20% cost savings. |
+| `LAMBDA-003` | **Tagging**: Checks for missing tags (e.g., `CostCenter`) crucial for cost allocation. |
+| `LAMBDA-004` | **Async Retries**: Suggests reducing maximum retry attempts for async invocations to prevent wastage during failure loops. |
+| `LAMBDA-005` | **Powertools Log Level**: Verify `POWERTOOLS_LOG_LEVEL` is set appropriate for the environment. |
+| `LAMBDA-006` | **Log Events**: Suggests disabling `POWERTOOLS_LOGGER_LOG_EVENT` in production to reduce log data volume. |
+| `LAMBDA-007` | **Sample Rate**: Suggests setting `POWERTOOLS_LOGGER_SAMPLE_RATE` to sample logs rather than logging everything. |
+| `LAMBDA-008` | **VPC Gateway Endpoints**: Ensures Lambda functions in VPCs have access to S3/DynamoDB Gateway Endpoints to avoid expensive NAT Gateway charges. |
+| `LAMBDA-009` | **Static Concurrency**: Detects static Provisioned Concurrency without AutoScaling, which leads to idle costs. |
 
-#### CloudWatch
+### CloudWatch
 
-| Error Code | Description |
-|------------|-------------|
-| CW-001 | The log group retention period is too long. Consider reducing it to save costs and improve log management efficiency. |
-| CW-002 | The log group has no retention policy. Consider setting a retention policy to save costs and improve log management efficiency. |
-| CW-003 | The log group is using STANDARD class. Consider using INFREQUENT_ACCESS to save costs. |
+| Code | Description |
+|------|-------------|
+| `CW-001` | **Retention Period**: warns if log retention is set to extremely long periods (e.g., > 30 days) for high-volume logs. |
+| `CW-002` | **Missing Retention**: Warns if a Log Group has no retention policy at all. |
+| `CW-003` | **Log Class**: Suggests using `INFREQUENT_ACCESS` log class for cost savings where appropriate. |
+
+## Configuration
+
+CloudSaver now relies on **presets** and standard **AWS SAM configuration**:
+
+-   **Rules**: By default, the `Strict` preset is applied, enabling all available rules.
+-   **Environments**: Defined in `samconfig.toml`. CloudSaver parses parameter overrides and applies them to the template to handle environment-specific logic (like conditional resources).
 
 ## GitHub Action Usage
 
-You can use Cloud Cost Saver as a GitHub Action to automatically analyze your AWS CloudFormation templates for cost optimization in your CI/CD pipeline.
-
-### Basic Usage
-
-Add the following step to your workflow YAML (e.g., `.github/workflows/cloud_cost_saver.yml`):
+Integrate CloudSaver into your CI/CD pipeline:
 
 ```yaml
 - name: Run Cloud Cost Saver
   uses: ./
   with:
-    template: src/fixtures/aws/cfn-testing-pass.yaml
-    environment: default
-    samconfig: src/fixtures/aws/samconfig.toml
+    template: template.yaml
+    samconfig: samconfig.toml
+    format: html
 ```
-
-### Inputs
-
-| Name           | Description                                              | Required | Example                                      |
-|----------------|----------------------------------------------------------|----------|----------------------------------------------|
-| template       | Path to the CloudFormation template to analyze           | Yes      | src/fixtures/aws/cfn-testing-pass.yaml        |
-| environment    | Environment name for rule overrides                      | No       | default                                      |
-| samconfig      | Path to your AWS SAM config file                         | No       | src/fixtures/aws/samconfig.toml               |
-| format         | Output format (text, json, html)                         | No       | text                                         |
-
-### Example Workflow
-
-```yaml
-name: Cloud Cost Saver
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Run Cloud Cost Saver
-        uses: ./
-        with:
-          template: src/fixtures/aws/cfn-testing-pass.yaml
-          environment: default
-          samconfig: src/fixtures/aws/samconfig.toml
-```
-
-This will run the Cloud Cost Saver action on every push to `main` and on pull requests, analyzing your CloudFormation template for cost-saving opportunities.
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request on GitHub.
+Contributions are welcome! Please open an issue or submit a PR.
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+MIT License.
