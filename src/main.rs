@@ -55,32 +55,51 @@ fn run_scan(args: ScanArgs) -> ExitCode {
         cloudformation: rule_config,
     };
 
-    let environment = args.environment;
     let mut error_reporter = error_reporter::ErrorReporter::new(&template_file);
-
-    let mut parsed_cfn =
-        parse_cloudformation(&template_file).expect("Failed to parse CloudFormation template");
-    if let Some(samconfig) = args.samconfig.as_deref() {
-        let samconfig = parse_samconfig(samconfig).expect("Failed to parse samconfig");
-        parsed_cfn.resolve_parameters(Some(&samconfig), environment.as_str());
-    } else {
-        parsed_cfn.resolve_parameters(None, environment.as_str());
-    }
     let line_marker =
         parsers::get_yaml_line_marker(&template_file).expect("Failed to get YAML line marker");
-    let mut checker = Checker::new(
-        &config,
-        &mut error_reporter,
-        &parsed_cfn,
-        &line_marker,
-        &environment,
-    );
-    checker.run_checks();
+
+    // Determine environments
+    let samconfig_obj = if let Some(path) = &args.samconfig {
+        Some(parse_samconfig(path).expect("Failed to parse samconfig"))
+    } else {
+        None
+    };
+
+    let environments: Vec<String> = if let Some(ref sc) = samconfig_obj {
+        // Collect all environment names from samconfig
+        let mut envs: Vec<String> = sc.environments.keys().cloned().collect();
+        // Sort for consistent execution order
+        envs.sort();
+        envs
+    } else {
+        // Fallback to single environment from args
+        vec![args.environment.clone()]
+    };
+
+    for env in environments {
+        error_reporter.set_current_environment(&env);
+
+        let mut parsed_cfn =
+            parse_cloudformation(&template_file).expect("Failed to parse CloudFormation template");
+
+        parsed_cfn.resolve_parameters(samconfig_obj.as_ref(), &env);
+        parsed_cfn.apply_conditions();
+
+        let mut checker = Checker::new(
+            &config,
+            &mut error_reporter,
+            &parsed_cfn,
+            &line_marker,
+            &env,
+        );
+        checker.run_checks();
+    }
+
     if error_reporter.has_errors() {
         if args.format == "json" {
             println!("{}", error_reporter.render_json());
         } else if args.format == "html" {
-            // HTML rendering will be implemented in error_reporter
             println!("{}", error_reporter.render_html());
         } else {
             eprintln!("{}", error_reporter.render_errors());

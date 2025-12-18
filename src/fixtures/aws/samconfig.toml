@@ -21,5 +21,5 @@ s3_prefix = "my-sam-app-prod"
 region = "us-east-1"
 confirm_changeset = true
 capabilities = "CAPABILITY_IAM"
-parameter_overrides = "EnvironmentName=\"prod\" DatabaseName=\"prod-database\" ApiKey=\"my-api-key\""
+parameter_overrides = "Environment=prod DatabaseName=prod-database ApiKey=my-api-key"
 image_repositories = []

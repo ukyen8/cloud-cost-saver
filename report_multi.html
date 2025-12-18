@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudSaver Report</title>
+    <style>
+        :root {
+            --primary-color: #0366d6;
+            --bg-color: #f6f8fa;
+            --card-bg: #ffffff;
+            --border-color: #e1e4e8;
+            --text-color: #24292e;
+            --subtext-color: #586069;
+            --code-bg: #f6f8fa;
+            --error-bg: #ffeef0;
+            --error-text: #b31d28;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .timestamp {
+            color: var(--subtext-color);
+            font-size: 0.9rem;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        select {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--card-bg);
+            cursor: pointer;
+        }
+
+        .summary-card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .stat-label {
+            color: var(--subtext-color);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+        }
+
+        .resource-group {
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .resource-header {
+            background: #f1f8ff;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .resource-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .issue-count {
+            background: rgba(3, 102, 214, 0.1);
+            color: var(--primary-color);
+            padding: 0.2rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .violation-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .violation-item {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .violation-item:last-child {
+            border-bottom: none;
+        }
+
+        .violation-header {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 0.5rem;
+        }
+
+        .violation-code {
+            background: var(--error-bg);
+            color: var(--error-text);
+            font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-right: 1rem;
+        }
+
+        .violation-message {
+            margin: 0.5rem 0;
+            line-height: 1.5;
+        }
+
+        .location-info {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: var(--subtext-color);
+            margin-top: 0.5rem;
+        }
+
+        .file-path {
+            font-family: monospace;
+        }
+
+        .env-container {
+            display: none;
+        }
+
+        .env-container.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <h1>CloudSaver Report</h1>
+        <div class="timestamp">Generated on 2025-12-18 00:17:58</div>
+    </div>
+
+    <div class="summary-card">
+        <div id="total-issues" class="stat-value">32</div>
+        <div class="stat-label">Total Issues Found</div>
+    </div>
+
+    <div class="controls">
+        <label for="env-selector">Environment: </label>
+        <select id="env-selector" onchange="showEnvironment(this.value)">
+            
+            <option value="default">default</option>
+            
+            <option value="prod">prod</option>
+            
+        </select>
+    </div>
+
+    
+    <div id="env-default" class="env-container" data-issues="18">
+        
+        <div class="resource-group">
+            <div class="resource-header">
+                <h2 class="resource-name">MyScaledLambda</h2>
+                <span class="issue-count">3 issues</span>
+            </div>
+            <ul class="violation-list">
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-001</span>
+                    </div>
+                    <div class="violation-message">Lambda function creates a log group automatically when invoked for the first time with no expiry. Please explicitly create a log group with a retention policy.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 68</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-002</span>
+                    </div>
+                    <div class="violation-message">Consider using ARM architecture. Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 68</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-003</span>
+                    </div>
+                    <div class="violation-message">The Lambda function is missing a tag. Tags are useful for budgeting and identifying areas for cost optimization.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 68</span>
+                        
+                    </div>
+                </li>
+                
+            </ul>
+        </div>
+        
+        <div class="resource-group">
+            <div class="resource-header">
+                <h2 class="resource-name">MyStaticConcurrencyLambda</h2>
+                <span class="issue-count">4 issues</span>
+            </div>
+            <ul class="violation-list">
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-001</span>
+                    </div>
+                    <div class="violation-message">Lambda function creates a log group automatically when invoked for the first time with no expiry. Please explicitly create a log group with a retention policy.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 45</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-002</span>
+                    </div>
+                    <div class="violation-message">Consider using ARM architecture. Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 45</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-003</span>
+                    </div>
+                    <div class="violation-message">The Lambda function is missing a tag. Tags are useful for budgeting and identifying areas for cost optimization.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 45</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-009</span>
+                    </div>
+                    <div class="violation-message">Static Provisioned Concurrency detected. Consider using Application Auto Scaling to optimize costs by scheduling concurrency or scaling based on utilization.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 54</span>
+                        
+                    </div>
+                </li>
+                
+            </ul>
+        </div>
+        
+        <div class="resource-group">
+            <div class="resource-header">
+                <h2 class="resource-name">MyStaticServerless</h2>
+                <span class="issue-count">4 issues</span>
+            </div>
+            <ul class="violation-list">
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-001</span>
+                    </div>
+                    <div class="violation-message">Lambda function creates a log group automatically when invoked for the first time with no expiry. Please explicitly create a log group with a retention policy.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 58</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-002</span>
+                    </div>
+                    <div class="violation-message">Consider using ARM architecture. Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 58</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-003</span>
+                    </div>
+                    <div class="violation-message">The Lambda function is missing a tag. Tags are useful for budgeting and identifying areas for cost optimization.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 58</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-009</span>
+                    </div>
+                    <div class="violation-message">Static Provisioned Concurrency detected. Consider using Application Auto Scaling to optimize costs by scheduling concurrency or scaling based on utilization.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 64</span>
+                        
+                    </div>
+                </li>
+                
+            </ul>
+        </div>
+        
+        <div class="resource-group">
+            <div class="resource-header">
+                <h2 class="resource-name">MyUntaggedLambda</h2>
+                <span class="issue-count">3 issues</span>
+            </div>
+            <ul class="violation-list">
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-001</span>
+                    </div>
+                    <div class="violation-message">Lambda function creates a log group automatically when invoked for the first time with no expiry. Please explicitly create a log group with a retention policy.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 93</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-002</span>
+                    </div>
+                    <div class="violation-message">Consider using ARM architecture. Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 93</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-003</span>
+                    </div>
+                    <div class="violation-message">The Lambda function is missing a tag. Tags are useful for budgeting and identifying areas for cost optimization.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 93</span>
+                        
+                    </div>
+                </li>
+                
+            </ul>
+        </div>
+        
+        <div class="resource-group">
+            <div class="resource-header">
+                <h2 class="resource-name">MyVPCLambda</h2>
+                <span class="issue-count">4 issues</span>
+            </div>
+            <ul class="violation-list">
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-001</span>
+                    </div>
+                    <div class="violation-message">Lambda function creates a log group automatically when invoked for the first time with no expiry. Please explicitly create a log group with a retention policy.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 25</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-002</span>
+                    </div>
+                    <div class="violation-message">Consider using ARM architecture. Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 25</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-003</span>
+                    </div>
+                    <div class="violation-message">The Lambda function is missing a tag. Tags are useful for budgeting and identifying areas for cost optimization.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 25</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-008</span>
+                    </div>
+                    <div class="violation-message">Lambda function is in a VPC but no compatible Gateway Endpoint (S3/DynamoDB) was found in THIS template. Verify that S3/DynamoDB Gateway Endpoints are configured (possibly in another stack) to avoid NAT Gateway charges.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 33</span>
+                        
+                    </div>
+                </li>
+                
+            </ul>
+        </div>
+        
+        
+    </div>
+    
+    <div id="env-prod" class="env-container" data-issues="14">
+        
+        <div class="resource-group">
+            <div class="resource-header">
+                <h2 class="resource-name">MyScaledLambda</h2>
+                <span class="issue-count">3 issues</span>
+            </div>
+            <ul class="violation-list">
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-001</span>
+                    </div>
+                    <div class="violation-message">Lambda function creates a log group automatically when invoked for the first time with no expiry. Please explicitly create a log group with a retention policy.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 68</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-002</span>
+                    </div>
+                    <div class="violation-message">Consider using ARM architecture. Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 68</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-003</span>
+                    </div>
+                    <div class="violation-message">The Lambda function is missing a tag. Tags are useful for budgeting and identifying areas for cost optimization.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 68</span>
+                        
+                    </div>
+                </li>
+                
+            </ul>
+        </div>
+        
+        <div class="resource-group">
+            <div class="resource-header">
+                <h2 class="resource-name">MyStaticServerless</h2>
+                <span class="issue-count">4 issues</span>
+            </div>
+            <ul class="violation-list">
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-001</span>
+                    </div>
+                    <div class="violation-message">Lambda function creates a log group automatically when invoked for the first time with no expiry. Please explicitly create a log group with a retention policy.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 58</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-002</span>
+                    </div>
+                    <div class="violation-message">Consider using ARM architecture. Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 58</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-003</span>
+                    </div>
+                    <div class="violation-message">The Lambda function is missing a tag. Tags are useful for budgeting and identifying areas for cost optimization.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 58</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-009</span>
+                    </div>
+                    <div class="violation-message">Static Provisioned Concurrency detected. Consider using Application Auto Scaling to optimize costs by scheduling concurrency or scaling based on utilization.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 64</span>
+                        
+                    </div>
+                </li>
+                
+            </ul>
+        </div>
+        
+        <div class="resource-group">
+            <div class="resource-header">
+                <h2 class="resource-name">MyUntaggedLambda</h2>
+                <span class="issue-count">3 issues</span>
+            </div>
+            <ul class="violation-list">
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-001</span>
+                    </div>
+                    <div class="violation-message">Lambda function creates a log group automatically when invoked for the first time with no expiry. Please explicitly create a log group with a retention policy.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 93</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-002</span>
+                    </div>
+                    <div class="violation-message">Consider using ARM architecture. Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 93</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-003</span>
+                    </div>
+                    <div class="violation-message">The Lambda function is missing a tag. Tags are useful for budgeting and identifying areas for cost optimization.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 93</span>
+                        
+                    </div>
+                </li>
+                
+            </ul>
+        </div>
+        
+        <div class="resource-group">
+            <div class="resource-header">
+                <h2 class="resource-name">MyVPCLambda</h2>
+                <span class="issue-count">4 issues</span>
+            </div>
+            <ul class="violation-list">
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-001</span>
+                    </div>
+                    <div class="violation-message">Lambda function creates a log group automatically when invoked for the first time with no expiry. Please explicitly create a log group with a retention policy.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 25</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-002</span>
+                    </div>
+                    <div class="violation-message">Consider using ARM architecture. Lambda functions on ARM can be up to 20% cheaper than equivalent x86 functions.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 25</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-003</span>
+                    </div>
+                    <div class="violation-message">The Lambda function is missing a tag. Tags are useful for budgeting and identifying areas for cost optimization.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 25</span>
+                        
+                    </div>
+                </li>
+                
+                <li class="violation-item">
+                    <div class="violation-header">
+                        <span class="violation-code">LAMBDA-008</span>
+                    </div>
+                    <div class="violation-message">Lambda function is in a VPC but no compatible Gateway Endpoint (S3/DynamoDB) was found in THIS template. Verify that S3/DynamoDB Gateway Endpoints are configured (possibly in another stack) to avoid NAT Gateway charges.</div>
+                    <div class="location-info">
+                        <span>File: <span class="file-path">src/fixtures/aws/cfn-advanced-cost.yaml</span></span>
+                        
+                        <span>Line: 33</span>
+                        
+                    </div>
+                </li>
+                
+            </ul>
+        </div>
+        
+        
+    </div>
+    
+
+    <script>
+        function showEnvironment(envName) {
+            // Hide all containers
+            const containers = document.querySelectorAll('.env-container');
+            containers.forEach(c => c.classList.remove('active'));
+
+            // Show selected container
+            const selected = document.getElementById('env-' + envName);
+            if (selected) {
+                selected.classList.add('active');
+
+                // Update total issues count
+                const issues = selected.getAttribute('data-issues');
+                const totalIssuesEl = document.getElementById('total-issues');
+                if (totalIssuesEl && issues) {
+                    totalIssuesEl.textContent = issues;
+                }
+            }
+        }
+
+        // Show first environment by default
+        const selector = document.getElementById('env-selector');
+        if (selector && selector.options.length > 0) {
+            showEnvironment(selector.options[0].value);
+        }
+    </script>
+</body>
+
+</html>

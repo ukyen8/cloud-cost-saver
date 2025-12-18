@@ -174,7 +174,11 @@ impl RuleConfig {
         {
             return rule.enabled;
         }
-        false
+        // Fallback to base rules
+        self.rules
+            .get(&violation)
+            .map(|r| r.enabled)
+            .unwrap_or(false)
     }
 
     pub fn get_rule(&self, rule: RuleType, environment: &str) -> Option<&RuleTypeConfig> {
@@ -182,6 +186,7 @@ impl RuleConfig {
             .get(environment)
             .and_then(|rules| rules.as_ref())
             .and_then(|rules| rules.get(&rule))
+            .or_else(|| self.rules.get(&rule))
     }
 
     pub fn apply_preset(&mut self, preset: Preset) {

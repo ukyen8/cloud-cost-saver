@@ -2,6 +2,18 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Template for testing advanced Lambda cost rules
 
+Parameters:
+  Environment:
+    Type: String
+    Default: default
+    AllowedValues:
+      - default
+      - prod
+      - staging
+
+Conditions:
+  IsNotProd: !Not [!Equals [!Ref Environment, prod]]
+
 Resources:
   # ----------------------------------------------------------
   #  Storage & Data Transfer (VPC Endpoints)
@@ -31,6 +43,7 @@ Resources:
   # Violation: Static Provisioned Concurrency > 0 with NO AutoScaling
   MyStaticConcurrencyLambda:
     Type: AWS::Lambda::Function
+    Condition: IsNotProd
     Properties:
       Handler: index.handler
       Role: arn:aws:iam::123456789012:role/service-role/role
