@@ -15,6 +15,8 @@ pub(crate) struct CloudFormation {
     pub mappings: Option<HashMap<String, Mapping>>,
     #[serde(rename = "Globals")]
     pub globals: Option<Globals>,
+    #[serde(rename = "Conditions")]
+    pub conditions: Option<HashMap<String, serde_yaml::Value>>,
     #[serde(rename = "Resources")]
     pub resources: Option<IndexMap<String, Resource>>,
     #[serde(rename = "Outputs")]
@@ -204,6 +206,78 @@ impl CloudFormation {
                 }
             }
         }
+    }
+
+    pub fn apply_conditions(&mut self) {
+        if let Some(conditions) = &self.conditions {
+            let mut resolved_conditions: HashMap<String, bool> = HashMap::new();
+
+            for (name, condition) in conditions {
+                resolved_conditions.insert(name.clone(), self.evaluate_condition(condition));
+            }
+
+            if let Some(resources) = self.resources.as_mut() {
+                resources.retain(|_, resource| {
+                    if let Some(serde_yaml::Value::String(condition_name)) =
+                        resource.other.get("Condition")
+                    {
+                        return *resolved_conditions.get(condition_name).unwrap_or(&true);
+                    }
+                    true
+                });
+            }
+        }
+    }
+
+    fn evaluate_condition(&self, value: &serde_yaml::Value) -> bool {
+        if let serde_yaml::Value::Tagged(tagged) = value {
+            match tagged.tag.to_string().as_str() {
+                "!Equals" => {
+                    if let Some(seq) = tagged.value.as_sequence() {
+                        if seq.len() == 2 {
+                            let left = self.resolve_value(&seq[0]);
+                            let right = self.resolve_value(&seq[1]);
+                            return left == right;
+                        }
+                    }
+                }
+                "!Not" => {
+                    if let Some(seq) = tagged.value.as_sequence() {
+                        if seq.len() == 1 {
+                            return !self.evaluate_condition(&seq[0]);
+                        }
+                    }
+                    return !self.evaluate_condition(&tagged.value);
+                }
+                "!And" => {
+                    if let Some(seq) = tagged.value.as_sequence() {
+                        return seq.iter().all(|v| self.evaluate_condition(v));
+                    }
+                }
+                "!Or" => {
+                    if let Some(seq) = tagged.value.as_sequence() {
+                        return seq.iter().any(|v| self.evaluate_condition(v));
+                    }
+                }
+                _ => {}
+            }
+        }
+        false
+    }
+
+    fn resolve_value(&self, value: &serde_yaml::Value) -> serde_yaml::Value {
+        if let serde_yaml::Value::Tagged(tagged) = value {
+            if tagged.tag == "!Ref" {
+                if let Some(ref_name) = tagged.value.as_str() {
+                    if let Some(param) = self.parameters.as_ref().and_then(|p| p.get(ref_name)) {
+                        if let Some(default) = &param.default {
+                            return default.clone();
+                        }
+                    }
+                }
+            }
+        }
+        value.clone()
     }
 }
 
