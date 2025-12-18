@@ -60,11 +60,10 @@ fn run_scan(args: ScanArgs) -> ExitCode {
         parsers::get_yaml_line_marker(&template_file).expect("Failed to get YAML line marker");
 
     // Determine environments
-    let samconfig_obj = if let Some(path) = &args.samconfig {
-        Some(parse_samconfig(path).expect("Failed to parse samconfig"))
-    } else {
-        None
-    };
+    let samconfig_obj = args
+        .samconfig
+        .as_ref()
+        .map(|path| parse_samconfig(path).expect("Failed to parse samconfig"));
 
     let environments: Vec<String> = if let Some(ref sc) = samconfig_obj {
         // Collect all environment names from samconfig

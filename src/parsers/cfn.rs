@@ -267,7 +267,7 @@ impl CloudFormation {
 
     fn resolve_value(&self, value: &serde_yaml::Value) -> serde_yaml::Value {
         if let serde_yaml::Value::Tagged(tagged) = value {
-            if tagged.tag.to_string() == "!Ref" {
+            if tagged.tag == "!Ref" {
                 if let Some(ref_name) = tagged.value.as_str() {
                     if let Some(param) = self.parameters.as_ref().and_then(|p| p.get(ref_name)) {
                         if let Some(default) = &param.default {
